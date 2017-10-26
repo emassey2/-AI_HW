@@ -63,8 +63,8 @@ class Explorer:
             + " goal(s)"
 
         success = self.BFS()
-        os.system('clear')
-        print self.get_explored_map()
+        # os.system('clear')
+        # print self.get_explored_map()
         # time.sleep(.1)
         # for i in range(0,3):
         #     success = self.BFS()
@@ -121,27 +121,26 @@ class Explorer:
         while (done_exploring != True and len(self.nodes_to_visit) != 0):
             # # os.system('clear')
             # print self.get_explored_map()
-            # time.sleep(.1)
+            time.sleep(.1)
             # print done_exploring
 
             #Start position
             if len(self.nodes_to_visit) !=0:
                 self.cur_pos = self.nodes_to_visit.pop(0)
-            # print "Current position: ", self.cur_pos
+            print "Current position: ", self.cur_pos
             row = self.cur_pos[0]
-            # print "Row: ", row
+            print "Row: ", row
             column = self.cur_pos[1]
-            # print "Column: ", column
-            # print "I'll start at row: " +str(row)
-            # print "and column: " +str(column)
+            print "Column: ", column
+            print "I'll start at row: " +str(row)
+            print "and column: " +str(column)
 
             cur_char = self.explorer_map.get_char(row,column)
 
             #Mark our position as visited
-            # self.explored_positions[(row,column)] = cur_char
             self.explored_positions.append((row,column))
 
-            # print "I've explored: ", self.explored_positions
+            print "I've explored: ", self.explored_positions
 
             #Check if this position is a goal
             if cur_char == self.goal_char:
@@ -153,8 +152,6 @@ class Explorer:
                 # break
 
             #Check down
-            #What is down for ethan?
-            #Why use x and y?
             if self.valid_new_exploration(row+1, column) and not done_exploring:
                 #Create a new node to visit
                 if ((row+1,column) not in self.nodes_to_visit):
@@ -178,7 +175,7 @@ class Explorer:
                 if ((row,column-1) not in self.nodes_to_visit):
                     self.nodes_to_visit.append((row,column-1))
 
-        # print self.nodes_to_visit
+            print self.nodes_to_visit
         return done_exploring
 
 
@@ -219,4 +216,4 @@ if __name__ == '__main__':
     files = ["map1.txt", "map2.txt", "map3.txt"]
     map_folder = "./maps/"
     # test(map_folder, files)
-    test(map_folder, "map3.txt")
+    test(map_folder, "map1.txt")
