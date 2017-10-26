@@ -16,6 +16,12 @@ def hilite(string, status, bold):
         attr.append('1')
     return '\x1b[%sm%s\x1b[0m' % (';'.join(attr), string)
 
+class Node:
+    def __init__(self, parent, children, position):
+        self.children = children #list of objects of type node
+        self.parent = parent #object type node
+        self.position = position #tuple
+
 class Explorer:
     def __init__(self, explorer_map, goal_char='*', free_char=' ', start_char='s'):
         self.num_goals = 0
@@ -29,6 +35,7 @@ class Explorer:
         self.explorer_map = explorer_map
         self.num_goals_found = 0
         self.nodes_to_visit = list()
+        self.root = Node(None,list(),(0,0)) #Create the root
 
 
     def find_POIS(self):
@@ -36,6 +43,7 @@ class Explorer:
         a_goal_found = False
         line_ct = 0
         cur_map = self.explorer_map.explorer_map
+
         #Read each line as a string
         for line in cur_map:
              #Find if the character is in the line
@@ -43,7 +51,9 @@ class Explorer:
                 #Get the line and position in the line of the character
                 self.start_pos = (line_ct,line.index(self.start_char))
                 print self.start_pos
-                self.nodes_to_visit.append((self.start_pos))
+                # self.nodes_to_visit.append((self.start_pos))
+                self.root.position = self.start_pos
+                self.nodes_to_visit.append(self.root)
                 # print "Nodes to visit: ", self.nodes_to_visit
                 start_found = True
 
@@ -75,6 +85,73 @@ class Explorer:
                 " goals out of a possible " + str(self.num_goals)
         print "The search was ultimately a " + success_str + "!"
 
+    def move_to_position(self,cur_node, desired_node):
+        #list of tuples (moves) based on the tree structure
+
+        #if (desired_node in cur_node.children)
+        #then record the movement
+
+        #Record movement in the opposite direction
+        # else cur_node = cur_node.parent
+        '''
+        create a list of ancestors and look for the closest one related to the
+        desired position
+        works backwards from the cur_node and check if the cur_node is in the
+        ancestors list
+        '''
+        ancestors = list()
+        print "The desired node :", desired_node.position
+        while (desired_node.parent != None):
+            ancestors.append(desired_node.parent)
+            desired_node = desired_node.parent
+            print "Position of the desired_node parent: ", \
+                desired_node.position
+
+        print "Out of the while loop for ancestors"
+
+    def find_children(self, node):
+        cur_pos = node.position
+        cur_row = cur_pos[0]
+        cur_col = cur_pos[1]
+        children_list = list()
+        #Check down
+        if self.valid_new_exploration(cur_row+1, cur_col):
+            #Create a new node to visit
+            if ((cur_row+1,cur_col) not in self.nodes_to_visit):
+                down_child = Node(node, list(), (cur_row+1,cur_col))
+                print "Down child position: ", down_child.position
+                children_list.append(down_child)
+                self.nodes_to_visit.append(down_child)
+
+
+        #check right
+        if self.valid_new_exploration(cur_row, cur_col+1):
+            #Create a new node to visit
+            if ((cur_row,cur_col+1) not in self.nodes_to_visit):
+                right_child = Node(node, list(), (cur_row, cur_col+1))
+                print "right child position: ", right_child.position
+                children_list.append(right_child)
+                self.nodes_to_visit.append(right_child)
+
+        #check up
+        if self.valid_new_exploration(cur_row-1, cur_col):
+            #Create a new node to visit
+            if ((cur_row-1,cur_col) not in self.nodes_to_visit):
+                up_child = Node(node, list(), (cur_row-1, cur_col))
+                print "Up child position: ", up_child.position
+                children_list.append(up_child)
+                self.nodes_to_visit.append(up_child)
+
+        #check left
+        if self.valid_new_exploration(cur_row, cur_col-1):
+            #Create a new node to visit
+            if ((cur_row,cur_col-1) not in self.nodes_to_visit):
+                left_child = Node(node, list(), (cur_row, cur_col-1))
+                print "Left child position: ", left_child.position
+                children_list.append(left_child)
+                self.nodes_to_visit.append(left_child)
+
+        return children_list
 
     def valid_new_exploration(self, row, column):
         valid_new_exploration = False
@@ -118,6 +195,8 @@ class Explorer:
 
     def BFS(self):
         done_exploring = False
+        cur_node = self.root
+
         while (done_exploring != True and len(self.nodes_to_visit) != 0):
             # # os.system('clear')
             # print self.get_explored_map()
@@ -126,19 +205,17 @@ class Explorer:
 
             #Start position
             if len(self.nodes_to_visit) !=0:
-                self.cur_pos = self.nodes_to_visit.pop(0)
-            print "Current position: ", self.cur_pos
-            row = self.cur_pos[0]
-            print "Row: ", row
-            column = self.cur_pos[1]
-            print "Column: ", column
-            print "I'll start at row: " +str(row)
-            print "and column: " +str(column)
+                self.cur_node = self.nodes_to_visit.pop(0)
+            print "Current position: ", self.cur_node.position
+            cur_row = self.cur_node.position[0]
+            cur_col = self.cur_node.position[1]
 
-            cur_char = self.explorer_map.get_char(row,column)
+
+            cur_char = self.explorer_map.get_char(cur_row,cur_col)
 
             #Mark our position as visited
-            self.explored_positions.append((row,column))
+            if cur_node.position not in self.explored_positions:
+                self.explored_positions.append((cur_row,cur_col))
 
             print "I've explored: ", self.explored_positions
 
@@ -149,33 +226,10 @@ class Explorer:
             #Finish exploring if number of all goals are found
             if self.num_goals_found == self.num_goals: #It will never be greater
                 done_exploring = True
-                # break
 
-            #Check down
-            if self.valid_new_exploration(row+1, column) and not done_exploring:
-                #Create a new node to visit
-                if ((row+1,column) not in self.nodes_to_visit):
-                    self.nodes_to_visit.append((row+1,column))
+            cur_node.children = self.find_children(cur_node)
+            self.move_to_position(cur_node,self.nodes_to_visit[0])
 
-            #check right
-            if self.valid_new_exploration(row, column+1) and not done_exploring:
-                #Create a new node to visit
-                if ((row,column+1) not in self.nodes_to_visit):
-                                self.nodes_to_visit.append((row,column+1))
-
-            #check up
-            if self.valid_new_exploration(row-1, column) and not done_exploring:
-                #Create a new node to visit
-                if ((row-1,column) not in self.nodes_to_visit):
-                    self.nodes_to_visit.append((row-1,column))
-
-            #check left
-            if self.valid_new_exploration(row, column-1) and not done_exploring:
-                #Create a new node to visit
-                if ((row,column-1) not in self.nodes_to_visit):
-                    self.nodes_to_visit.append((row,column-1))
-
-            print self.nodes_to_visit
         return done_exploring
 
 
