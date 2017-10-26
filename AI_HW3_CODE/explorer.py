@@ -36,7 +36,7 @@ class Explorer:
         self.explored_positions = dict()
         self.num_goals_found = 0
         self.num_goals = 0
-        self.num_steps = -1 # this is a bit of a hack see DFS()/BFS()
+        self.num_steps = 0
         self.explorer_map = explorer_map
         self.debug = debug
         self.ending_pos = (0,0)
@@ -67,7 +67,7 @@ class Explorer:
 
         return start_found and a_goal_found
 
-    def get_explored_map(self):
+    def get_explored_map(self, debug=False):
         map_state = ''
 
         cur_map = self.explorer_map.explorer_map
@@ -91,6 +91,11 @@ class Explorer:
                 map_state += \
                     hilite(cur_char, (j, i) in self.explored_positions, bold)
             map_state += '\n'
+
+        if debug:
+            map_state += "\nCurrent Position: " + str(self.cur_pos)
+            map_state += "\nSteps taken: " + str(self.num_steps)
+            map_state += "\nExplored: " + str(self.explored_positions)
 
 
         return map_state
@@ -155,29 +160,20 @@ class Explorer:
 
     # returns true when we find all the goals expected
     def DFS(self):
-        # it's a good thing num_steps starts at -1
-        # we increase it by one each time we enter here
-        # and the first time we enter is no exception
-        # entering for the first time isn't a movement
-        # but we still increase the count. hence the -1
-        self.num_steps += 1
-        # TODO do we even need steps? how do they differ from explored states?
-
         if self.debug:
-            os.system('clear')
-            print self.get_explored_map()
+            print self.get_explored_map(debug=True)
             time.sleep(.1)
             #print "explored: " + str(self.explored_positions)
         done_exploring = False
 
-        cur_x = self.cur_pos[0]
-        cur_y = self.cur_pos[1]
-        cur_char = self.explorer_map.get_char(cur_x, cur_y)
-        #print "cur x: " + str(cur_x)
-        #print "cur y: " + str(cur_y)
+        cur_row = self.cur_pos[0]
+        cur_col = self.cur_pos[1]
+        cur_char = self.explorer_map.get_char(cur_row, cur_col)
+        #print "cur x: " + str(cur_row)
+        #print "cur y: " + str(cur_col)
 
         # mark our position as visited
-        self.explored_positions[(cur_x, cur_y)] = cur_char
+        self.explored_positions[(cur_row, cur_col)] = cur_char
 
         # check if this is the goal
         if cur_char == self.goal_char:
@@ -186,33 +182,51 @@ class Explorer:
         # return if we have met our expected goal
         if self.num_goals_found >= self.num_goals:
             done_exploring = True
-            self.ending_pos = (cur_x, cur_y)
-
-        # left, down, right up
+            self.ending_pos = (cur_row, cur_col)
 
         # check down
-        if self.valid_new_exploration(cur_x, cur_y+1) and not done_exploring:
-            self.cur_pos = (cur_x, cur_y+1)
+        if self.valid_new_exploration(cur_row, cur_col+1) and not done_exploring:
+            self.num_steps += 1
+            self.cur_pos = (cur_row, cur_col+1)
             done_exploring = self.DFS()
-            self.cur_pos = (cur_x, cur_y-1)
+            if not done_exploring:
+                self.num_steps += 1
+                self.cur_pos = (cur_row, cur_col-1)
+                if self.debug:
+                    print self.get_explored_map(debug=True)
 
         # check right
-        if self.valid_new_exploration(cur_x+1, cur_y) and not done_exploring:
-            self.cur_pos = (cur_x+1, cur_y)
+        if self.valid_new_exploration(cur_row+1, cur_col) and not done_exploring:
+            self.num_steps += 1
+            self.cur_pos = (cur_row+1, cur_col)
             done_exploring = self.DFS()
-            self.cur_pos = (cur_x-1, cur_y)
+            if not done_exploring:
+                self.num_steps += 1
+                self.cur_pos = (cur_row-1, cur_col)
+                if self.debug:
+                    print self.get_explored_map(debug=True)
 
         # check left
-        if self.valid_new_exploration(cur_x-1, cur_y) and not done_exploring:
-            self.cur_pos = (cur_x-1, cur_y)
+        if self.valid_new_exploration(cur_row-1, cur_col) and not done_exploring:
+            self.num_steps += 1
+            self.cur_pos = (cur_row-1, cur_col)
             done_exploring = self.DFS()
-            self.cur_pos = (cur_x+1, cur_y)
+            if not done_exploring:
+                self.num_steps += 1
+                self.cur_pos = (cur_row+1, cur_col)
+                if self.debug:
+                    print self.get_explored_map(debug=True)
 
         # check up
-        if self.valid_new_exploration(cur_x, cur_y-1) and not done_exploring:
-            self.cur_pos = (cur_x, cur_y-1)
+        if self.valid_new_exploration(cur_row, cur_col-1) and not done_exploring:
+            self.num_steps += 1
+            self.cur_pos = (cur_row, cur_col-1)
             done_exploring = self.DFS()
-            self.cur_pos = (cur_x, cur_y+1)
+            if not done_exploring:
+                self.num_steps += 1
+                self.cur_pos = (cur_row, cur_col+1)
+                if self.debug:
+                    print self.get_explored_map(debug=True)
 
         # no where else to look
         return done_exploring
