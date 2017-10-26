@@ -39,6 +39,7 @@ class Explorer:
         self.num_steps = -1 # this is a bit of a hack see DFS()/BFS()
         self.explorer_map = explorer_map
         self.debug = debug
+        self.ending_pos = (0,0)
 
     def start_timer(self):
         self.starting_time = datetime.datetime.now()
@@ -57,7 +58,7 @@ class Explorer:
             for j in range(0, len(cur_map[i])):
                 cur_char = cur_map[i][j]
                 if cur_char == self.start_char:
-                    self.cur_pos = (i, j)
+                    self.cur_pos = (j, i)
                     start_found = True
 
                 if cur_char == self.goal_char:
@@ -78,13 +79,17 @@ class Explorer:
                 if cur_char == ' ':
                     cur_char = '0'
 
-                if self.cur_pos == (i, j):
+                if self.cur_pos == (j, i):
                     bold = True
+
+                    # display R for robot (unless it's on a *, then it's an X)
                     if cur_char != '*':
                         cur_char = 'R'
+                    else:
+                        cur_char = 'X'
 
                 map_state += \
-                    hilite(cur_char, (i, j) in self.explored_positions, bold)
+                    hilite(cur_char, (j, i) in self.explored_positions, bold)
             map_state += '\n'
 
 
@@ -101,7 +106,7 @@ class Explorer:
                 # I will not stand for this!
                 return
 
-            # We ironically must be explore the map to find the start and num goals
+            # We ironically must explore the map to find the start and num goals
             if not self.find_POIs():
                 print "Something has gone wrong!"
                 print "I couldn't find a start or goal!"
@@ -114,6 +119,12 @@ class Explorer:
             print "Starting the timer...now!"
             self.start_timer()
             success = self.DFS()
+
+            #before printing the map reset to the ending position
+            if success:
+                self.cur_pos = self.ending_pos
+            print self.get_explored_map()
+
             # convert microsecond to millisecond
             duration = self.end_timer() / 1000
 
@@ -131,7 +142,7 @@ class Explorer:
     def valid_new_exploration(self, x, y):
         valid_new_exploration = False
 
-        #print (x, y) not in self.explored_positions
+        #print (x, y)
 
         cur_char = self.explorer_map.get_char(x, y)
         if (cur_char in self.goal_char or \
@@ -156,11 +167,14 @@ class Explorer:
             os.system('clear')
             print self.get_explored_map()
             time.sleep(.1)
-            #print self.explored_positions
+            #print "explored: " + str(self.explored_positions)
         done_exploring = False
+
         cur_x = self.cur_pos[0]
         cur_y = self.cur_pos[1]
         cur_char = self.explorer_map.get_char(cur_x, cur_y)
+        #print "cur x: " + str(cur_x)
+        #print "cur y: " + str(cur_y)
 
         # mark our position as visited
         self.explored_positions[(cur_x, cur_y)] = cur_char
@@ -172,12 +186,15 @@ class Explorer:
         # return if we have met our expected goal
         if self.num_goals_found >= self.num_goals:
             done_exploring = True
+            self.ending_pos = (cur_x, cur_y)
+
+        # left, down, right up
 
         # check down
-        if self.valid_new_exploration(cur_x, cur_y-1) and not done_exploring:
-            self.cur_pos = (cur_x, cur_y-1)
-            done_exploring = self.DFS()
+        if self.valid_new_exploration(cur_x, cur_y+1) and not done_exploring:
             self.cur_pos = (cur_x, cur_y+1)
+            done_exploring = self.DFS()
+            self.cur_pos = (cur_x, cur_y-1)
 
         # check right
         if self.valid_new_exploration(cur_x+1, cur_y) and not done_exploring:
@@ -192,10 +209,10 @@ class Explorer:
             self.cur_pos = (cur_x+1, cur_y)
 
         # check up
-        if self.valid_new_exploration(cur_x, cur_y+1) and not done_exploring:
-            self.cur_pos = (cur_x, cur_y+1)
-            done_exploring = self.DFS()
+        if self.valid_new_exploration(cur_x, cur_y-1) and not done_exploring:
             self.cur_pos = (cur_x, cur_y-1)
+            done_exploring = self.DFS()
+            self.cur_pos = (cur_x, cur_y+1)
 
         # no where else to look
         return done_exploring
@@ -207,7 +224,7 @@ class Explorer:
         ### Take a look at the DFS_TYPE as a reference
         return False
 
-# a 2d arrach of characters for the explorer to explore
+# a 2d array of characters for the explorer to explore
 class Explorer_Map:
     def __init__(self, map_location):
         self.explorer_map = [['']]
@@ -227,7 +244,7 @@ class Explorer_Map:
 
     def get_char(self, x_pos, y_pos):
         # if you access something out of bounds you are on your own
-        return self.explorer_map[x_pos][y_pos]
+        return self.explorer_map[y_pos][x_pos]
 
 # try exploring all the maps provided in the folder
 def test(folder, files):
@@ -252,7 +269,7 @@ def test(folder, files):
     print "\n********************************************************************************"
     print "Running an example in debug mode!"
     debug_explorer = Explorer(Explorer_Map(folder + files[0]), debug=True)
-    debug_explorer.explore((explorer.DFS_TYPE, explorer.BFS_TYPE))
+    debug_explorer.explore((debug_explorer.DFS_TYPE, debug_explorer.BFS_TYPE))
     print "********************************************************************************\n"
 if __name__ == '__main__':
     #TODO probably switch to iterative...
