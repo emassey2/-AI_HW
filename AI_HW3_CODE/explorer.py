@@ -24,6 +24,7 @@ class Explorer:
 
     DFS_TYPE = 0
     BFS_TYPE = 1
+    DEBUG_LEVEL = 1
 
     def __init__(self, explorer_map, goal_char='*', free_char=' ', start_char='s', debug=False):
         self.delete_me = True
@@ -92,13 +93,26 @@ class Explorer:
                     hilite(cur_char, (j, i) in self.explored_positions, bold)
             map_state += '\n'
 
-        if debug:
+        if self.DEBUG_LEVEL >= 2:
             map_state += "\nCurrent Position: " + str(self.cur_pos)
             map_state += "\nSteps taken: " + str(self.num_steps)
-            map_state += "\nExplored: " + str(self.explored_positions)
+            map_state += "\nExplored: "
+            keys = self.explored_positions.keys()
+            keys.sort()
+            for key in keys:
+                map_state += str(key) + ", "
 
 
         return map_state
+
+    def print_explored_map(self, debug=False):
+        if debug and self.DEBUG_LEVEL <= 1:
+            os.system("clear")
+
+        print self.get_explored_map(debug)
+
+        if debug and self.DEBUG_LEVEL <= 1:
+            time.sleep(.1)
 
     def explore(self, explore_types):
         for explore_type in explore_types:
@@ -128,7 +142,7 @@ class Explorer:
             #before printing the map reset to the ending position
             if success:
                 self.cur_pos = self.ending_pos
-            print self.get_explored_map()
+            self.print_explored_map()
 
             # convert microsecond to millisecond
             duration = self.end_timer() / 1000
@@ -161,16 +175,13 @@ class Explorer:
     # returns true when we find all the goals expected
     def DFS(self):
         if self.debug:
-            print self.get_explored_map(debug=True)
-            time.sleep(.1)
-            #print "explored: " + str(self.explored_positions)
+            self.print_explored_map(debug=True)
         done_exploring = False
 
+        # update our new position and find the current character
         cur_row = self.cur_pos[0]
         cur_col = self.cur_pos[1]
         cur_char = self.explorer_map.get_char(cur_row, cur_col)
-        #print "cur x: " + str(cur_row)
-        #print "cur y: " + str(cur_col)
 
         # mark our position as visited
         self.explored_positions[(cur_row, cur_col)] = cur_char
@@ -191,9 +202,9 @@ class Explorer:
             done_exploring = self.DFS()
             if not done_exploring:
                 self.num_steps += 1
-                self.cur_pos = (cur_row, cur_col-1)
+                self.cur_pos = (cur_row, cur_col)
                 if self.debug:
-                    print self.get_explored_map(debug=True)
+                    self.print_explored_map(debug=True)
 
         # check right
         if self.valid_new_exploration(cur_row+1, cur_col) and not done_exploring:
@@ -202,9 +213,9 @@ class Explorer:
             done_exploring = self.DFS()
             if not done_exploring:
                 self.num_steps += 1
-                self.cur_pos = (cur_row-1, cur_col)
+                self.cur_pos = (cur_row, cur_col)
                 if self.debug:
-                    print self.get_explored_map(debug=True)
+                    self.print_explored_map(debug=True)
 
         # check left
         if self.valid_new_exploration(cur_row-1, cur_col) and not done_exploring:
@@ -213,9 +224,9 @@ class Explorer:
             done_exploring = self.DFS()
             if not done_exploring:
                 self.num_steps += 1
-                self.cur_pos = (cur_row+1, cur_col)
+                self.cur_pos = (cur_row, cur_col)
                 if self.debug:
-                    print self.get_explored_map(debug=True)
+                    self.print_explored_map(debug=True)
 
         # check up
         if self.valid_new_exploration(cur_row, cur_col-1) and not done_exploring:
@@ -224,9 +235,9 @@ class Explorer:
             done_exploring = self.DFS()
             if not done_exploring:
                 self.num_steps += 1
-                self.cur_pos = (cur_row, cur_col+1)
+                self.cur_pos = (cur_row, cur_col)
                 if self.debug:
-                    print self.get_explored_map(debug=True)
+                    self.print_explored_map(debug=True)
 
         # no where else to look
         return done_exploring
