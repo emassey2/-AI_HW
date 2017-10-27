@@ -73,8 +73,8 @@ class Explorer:
             + " goal(s)"
 
         success = self.BFS()
-        # os.system('clear')
-        # print self.get_explored_map()
+        os.system('clear')
+        print self.get_explored_map()
         # time.sleep(.1)
         # for i in range(0,3):
         #     success = self.BFS()
@@ -94,15 +94,15 @@ class Explorer:
         requested_desired_node = desired_node
         deb_desired_node_parent = desired_node.parent
         deb_cur_node_parent = cur_node.parent
-        print "The desired node :", desired_node.position
-        print "Desired node parent: ", deb_desired_node_parent.position
+        # print "The desired node :", desired_node.position
+        # print "Desired node parent: ", deb_desired_node_parent.position
 
         while (desired_node.parent != None):
             ancestors.append(desired_node.parent)
             desired_node = desired_node.parent
             moves_based_on_ancestors.append(desired_node.position)
 
-        print "Number of ancestors: ", len(ancestors)
+        # print "Number of ancestors: ", len(ancestors)
 
         #Get back to the original request
         desired_node = requested_desired_node
@@ -111,17 +111,16 @@ class Explorer:
             print "No additional moves required"
 
         else:
-            print cur_node.position, " is a child of ", \
-                deb_cur_node_parent.position
-
+            # print cur_node.position, " is a child of ", \
+                # deb_cur_node_parent.position
             while (cur_node not in ancestors):
                 cur_node = cur_node.parent
-                print "Movement to add: ", cur_node.position
+                # print "Movement to add: ", cur_node.position
                 moves_to_do.append(cur_node.position)
 
             #Get index of the position in the list
             index = moves_based_on_ancestors.index(cur_node.position)
-            print "Found this ancestor on the index: ", index
+            # print "Found this ancestor on the index: ", index
             #Get a sublist till the common parent
             moves_based_on_ancestors = moves_based_on_ancestors[:index]
             #Reverse moves_based_on_ancestors
@@ -137,42 +136,75 @@ class Explorer:
             '''
 
         return moves_to_do
+    def nodes_to_visit_checker(self,(cur_row,cur_col)):
+        down_flag = True
+        up_flag = True
+        right_flag = True
+        left_flag = True
+
+        for node in self.nodes_to_visit:
+            # print "Node Position ", node.position
+            #down
+            if node.position == (cur_row+1,cur_col):
+                down_flag = False
+            #right
+            if node.position == (cur_row,cur_col+1):
+                # print "Node Position ", node.position
+                # print "Current row: ", cur_row
+                # print "Current col: ", cur_col+1
+
+                right_flag = False
+            #up
+            if node.position == (cur_row-1,cur_col):
+                up_flag = False
+            #left
+            if node.position == (cur_row,cur_col-1):
+                left_flag = False
+        return down_flag,right_flag,up_flag,left_flag
 
     def find_children(self, node):
         cur_pos = node.position
         cur_row = cur_pos[0]
         cur_col = cur_pos[1]
         children_list = list()
+
+        down_flag,right_flag,up_flag,left_flag = \
+            self.nodes_to_visit_checker((cur_row,cur_col))
+        # print "D ", down_flag
+        # print "R ", right_flag
+        # print "U ", up_flag
+        # print "L ", left_flag
+
         #Check down
-        if (self.valid_new_exploration(cur_row+1, cur_col)) and \
-            ((cur_row+1,cur_col) not in self.nodes_to_visit):
+        if self.valid_new_exploration(cur_row+1, cur_col) and \
+            down_flag:
                 down_child = Node(node, list(), (cur_row+1,cur_col))
-                print "Down child position: ", down_child.position
+                # print "Down child position: ", down_child.position
                 children_list.append(down_child)
                 self.nodes_to_visit.append(down_child)
 
 
         #check right
-        if (self.valid_new_exploration(cur_row, cur_col+1)) and \
-            ((cur_row,cur_col+1) not in self.nodes_to_visit):
+        if self.valid_new_exploration(cur_row, cur_col+1) and \
+            right_flag:
                 right_child = Node(node, list(), (cur_row, cur_col+1))
-                print "right child position: ", right_child.position
+                # print "right child position: ", right_child.position
                 children_list.append(right_child)
                 self.nodes_to_visit.append(right_child)
 
         #check up
-        if (self.valid_new_exploration(cur_row-1, cur_col)) and \
-            ((cur_row-1,cur_col) not in self.nodes_to_visit):
+        if self.valid_new_exploration(cur_row-1, cur_col) and \
+            up_flag:
                 up_child = Node(node, list(), (cur_row-1, cur_col))
-                print "Up child position: ", up_child.position
+                # print "Up child position: ", up_child.position
                 children_list.append(up_child)
                 self.nodes_to_visit.append(up_child)
 
         #check left
-        if (self.valid_new_exploration(cur_row, cur_col-1)) and \
-            ((cur_row,cur_col-1) not in self.nodes_to_visit):
+        if self.valid_new_exploration(cur_row, cur_col-1) and \
+            left_flag:
                 left_child = Node(node, list(), (cur_row, cur_col-1))
-                print "Left child position: ", left_child.position
+                # print "Left child position: ", left_child.position
                 children_list.append(left_child)
                 self.nodes_to_visit.append(left_child)
 
@@ -219,7 +251,7 @@ class Explorer:
         return map_state
 
     def print_explored_map(self):
-        os.system('clear')
+        # os.system('clear')
         print self.get_explored_map()
         time.sleep(.1)
 
@@ -231,13 +263,13 @@ class Explorer:
         while (done_exploring != True and len(self.nodes_to_visit) != 0):
             # # os.system('clear')
             # print self.get_explored_map()
-            time.sleep(.1)
+            # time.sleep(.1)
             # print done_exploring
 
             #Start position
             if len(self.nodes_to_visit) !=0:
                 cur_node = self.nodes_to_visit.pop(0)
-            print "Current position to explore: ", cur_node.position
+            # print "Current position to explore: ", cur_node.position
             cur_row = cur_node.position[0]
             cur_col = cur_node.position[1]
             self.cur_pos = cur_node.position #Variable used to draw the map
@@ -250,7 +282,9 @@ class Explorer:
             if cur_node.position not in self.explored_positions:
                 self.explored_positions.append((cur_row,cur_col))
 
-            print "I've explored: ", self.explored_positions
+            self.explored_positions.sort()
+
+            # print "I've explored: ", self.explored_positions
 
             #Check if this position is a goal
             if cur_char == self.goal_char:
@@ -261,19 +295,22 @@ class Explorer:
                 done_exploring = True
 
             #Get the children of the current node
-            cur_node.children = self.find_children(cur_node)
-            print "Number of children found: ", len(cur_node.children)
+            if not done_exploring:
+                cur_node.children = self.find_children(cur_node)
+                # print "Number of children found: ", len(cur_node.children)
 
-            #Find the moves neccesary to move to the next position
-            moves_to_do = self.move_to_position(cur_node,self.nodes_to_visit[0])
-
-            while(len(moves_to_do) != 0):
-                #Just move back in the tree
-                #Increase 1 step for each movement
-                self.cur_pos = moves_to_do.pop(0)
-                print "Passing by position: ", self.cur_pos
-                # self.print_explored_map
-            print "\n********************************************************************************"
+            if not done_exploring and len(self.nodes_to_visit) !=0:
+                #Find the moves neccesary to move to the next position
+                moves_to_do = self.move_to_position(cur_node,self.nodes_to_visit[0])
+                # print "List of moves: ", moves_to_do
+                while(len(moves_to_do) != 0):
+                    #Just move back in the tree
+                    #Increase 1 step for each movement
+                    self.cur_pos = moves_to_do.pop(0)
+                    # print "Passing by position: ", self.cur_pos
+                    # self.print_explored_map()
+                    # time.sleep(.1)
+                # print "\n********************************************************************************"
 
 
         return done_exploring
@@ -316,4 +353,4 @@ if __name__ == '__main__':
     files = ["map1.txt", "map2.txt", "map3.txt"]
     map_folder = "./maps/"
     # test(map_folder, files)
-    test(map_folder, "map1.txt")
+    test(map_folder, "map3.txt")
