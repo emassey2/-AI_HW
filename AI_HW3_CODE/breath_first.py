@@ -214,8 +214,6 @@ class Explorer:
         valid_new_exploration = False
         cur_char = self.explorer_map.get_char(row,column)
         # print "Exploring this cell: " +cur_char
-        #why in?
-        #there wont be other start char, oder?
         if (cur_char in self.goal_char or\
             cur_char in self.free_char or \
             cur_char in self.start_char) \
@@ -347,7 +345,7 @@ def test(folder,files):
     except NameError:
         pass
     explorer.explore()
-print "\n********************************************************************************"
+    print "\n********************************************************************************"
 if __name__ == '__main__':
     #TODO probably switch to iterative...
     files = ["map1.txt", "map2.txt", "map3.txt"]
