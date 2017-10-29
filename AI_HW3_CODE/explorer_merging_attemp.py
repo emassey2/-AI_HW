@@ -89,7 +89,7 @@ class Explorer:
 
         return start_found
 
-    def get_explored_map(self, debug=False):
+    def get_explored_map(self, explore_type, debug=False):
         map_state = ''
 
         cur_map = self.explorer_map.explorer_map
@@ -109,9 +109,12 @@ class Explorer:
                         cur_char = 'R'
                     else:
                         cur_char = 'X'
-
-                map_state += \
+                if explore_type == self.DFS_TYPE:
+                    map_state += \
                     hilite(cur_char, (j, i) in self.explored_positions, bold)
+                else:
+                    map_state += \
+                    hilite(cur_char, (j, i) in self.explored_positions_l, bold)
             map_state += '\n'
 
         if self.DEBUG_LEVEL >= 2:
@@ -126,11 +129,11 @@ class Explorer:
 
         return map_state
 
-    def print_explored_map(self, debug=False):
+    def print_explored_map(self, explore_type, debug=False):
         if debug and self.DEBUG_LEVEL <= 1:
             os.system("clear")
 
-        print self.get_explored_map(debug)
+        print self.get_explored_map(explore_type,debug)
 
         if debug and self.DEBUG_LEVEL <= 1:
             time.sleep(.1)
@@ -163,15 +166,19 @@ class Explorer:
             else:
                 self.BFS()
 
-            self.print_explored_map()
+            self.print_explored_map(explore_type)
 
             # convert microsecond to millisecond
             duration = self.end_timer() / 1000
 
             print "It took me " + str(duration) \
                 + " milliseconds to finish a " + search_type
-            print "I explored " + str(len(self.explored_positions)) \
-                + " positions before finishing my search."
+            if explore_type == self.DFS_TYPE:
+                print "I explored " + str(len(self.explored_positions)) \
+                    + " positions before finishing my search."
+            else:
+                print "I explored " + str(len(self.explored_positions_l)) \
+                    + " positions before finishing my search."
             print "The exploration took " + str(self.num_steps) + " steps."
             print "I found " + str(self.num_goals_found) + " goals.\n"
 
@@ -187,7 +194,8 @@ class Explorer:
         if (cur_char in self.goal_char or \
            cur_char in self.free_char or \
            cur_char in self.start_char) \
-           and (x, y) not in self.explored_positions:
+           and (x, y) not in self.explored_positions\
+           and (x,y) not in self.explored_positions_l:
             valid_new_exploration = True
 
         return valid_new_exploration
@@ -255,21 +263,15 @@ class Explorer:
         moves_to_do = list()
 
         while (len(self.nodes_to_visit) != 0):
-            # # os.system('clear')
-            # print self.get_explored_map()
-            # time.sleep(.1)
-            # print done_exploring
 
             #Start position
             if len(self.nodes_to_visit) !=0:
                 cur_node = self.nodes_to_visit.pop(0)
                 self.num_steps += 1
-            # print "Current position to explore: ", cur_node.position
-            cur_row = cur_node.position[0]
-            cur_col = cur_node.position[1]
-            self.cur_pos = cur_node.position #Variable used to draw the map
-            #Increase one step, due to movement
-            # self.print_explored_map()
+                # print "Current position to explore: ", cur_node.position
+                cur_row = cur_node.position[0]
+                cur_col = cur_node.position[1]
+                self.cur_pos = cur_node.position #Variable used to draw the map
 
             cur_char = self.explorer_map.get_char(cur_row,cur_col)
 
@@ -297,11 +299,6 @@ class Explorer:
                     #Just move back in the tree
                     self.cur_pos = moves_to_do.pop(0)
                     self.num_steps += 1
-                    # print "Passing by position: ", self.cur_pos
-                    # self.print_explored_map()
-                    # time.sleep(.1)
-                # print "\n********************************************************************************"
-
 
     def nodes_to_visit_checker(self,(cur_row,cur_col)):
         down_flag = True
@@ -310,15 +307,11 @@ class Explorer:
         left_flag = True
 
         for node in self.nodes_to_visit:
-            # print "Node Position ", node.position
             #down
             if node.position == (cur_row+1,cur_col):
                 down_flag = False
             #right
             if node.position == (cur_row,cur_col+1):
-                # print "Node Position ", node.position
-                # print "Current row: ", cur_row
-                # print "Current col: ", cur_col+1
 
                 right_flag = False
             #up
@@ -396,7 +389,8 @@ class Explorer:
         desired_node = requested_desired_node
 
         if desired_node in cur_node.children:
-            print "No additional moves required"
+            # print "No additional moves required"
+            pass
 
         else:
             # print cur_node.position, " is a child of ", \
