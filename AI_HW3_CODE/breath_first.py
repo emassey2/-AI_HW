@@ -25,6 +25,7 @@ class Node:
 class Explorer:
     def __init__(self, explorer_map, goal_char='*', free_char=' ', start_char='s'):
         self.num_goals = 0
+        self.starting_time = 0
         self.cur_pos = (0,0)
         self.free_char = free_char
         self.goals = list()
@@ -35,8 +36,15 @@ class Explorer:
         self.explorer_map = explorer_map
         self.num_goals_found = 0
         self.nodes_to_visit = list()
+        self.num_steps = 0
         self.root = Node(None,list(),(0,0)) #Create the root
 
+    def start_timer(self):
+        self.starting_time = datetime.datetime.now()
+
+    def end_timer(self):
+        delta = datetime.datetime.now() - self.starting_time
+        return delta.microseconds
 
     def find_POIS(self):
         start_found = False
@@ -71,16 +79,21 @@ class Explorer:
             print "I couldn't find a start or goal!"
         print "I'll try to find " +str(self.num_goals) \
             + " goal(s)"
-
+        print "Starting the timer...now!"
+        self.start_timer()
         success = self.BFS()
         os.system('clear')
         print self.get_explored_map()
         # time.sleep(.1)
         # for i in range(0,3):
         #     success = self.BFS()
-
+        duration = self.end_timer() / 1000
         success_str = "success " if success else "failure"
-
+        print "It took me " + str(duration) \
+            + " milliseconds to finish a search_type."
+        print "I explored " + str(len(self.explored_positions)) \
+            + " positions before finding the goal(s) or giving up."
+        print "The exploration took " + str(self.num_steps) + " steps."
         print "I found " + str(self.num_goals_found) + \
                 " goals out of a possible " + str(self.num_goals)
         print "The search was ultimately a " + success_str + "!"
@@ -267,10 +280,11 @@ class Explorer:
             #Start position
             if len(self.nodes_to_visit) !=0:
                 cur_node = self.nodes_to_visit.pop(0)
-            # print "Current position to explore: ", cur_node.position
-            cur_row = cur_node.position[0]
-            cur_col = cur_node.position[1]
-            self.cur_pos = cur_node.position #Variable used to draw the map
+                self.num_steps += 1
+                # print "Current position to explore: ", cur_node.position
+                cur_row = cur_node.position[0]
+                cur_col = cur_node.position[1]
+                self.cur_pos = cur_node.position #Variable used to draw the map
             #Increase one step, due to movement
             # self.print_explored_map()
 
@@ -289,8 +303,8 @@ class Explorer:
                 self.num_goals_found +=1
 
             #Finish exploring if number of all goals are found
-            if self.num_goals_found == self.num_goals: #It will never be greater
-                done_exploring = True
+            # if self.num_goals_found == self.num_goals: #It will never be greater
+            #     done_exploring = True
 
             #Get the children of the current node
             if not done_exploring:
@@ -305,6 +319,7 @@ class Explorer:
                     #Just move back in the tree
                     #Increase 1 step for each movement
                     self.cur_pos = moves_to_do.pop(0)
+                    self.num_steps += 1
                     # print "Passing by position: ", self.cur_pos
                     # self.print_explored_map()
                     # time.sleep(.1)
