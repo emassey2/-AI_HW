@@ -33,7 +33,6 @@ class Explorer:
     DEBUG_LEVEL = 1
 
     def __init__(self, explorer_map, goal_char='*', free_char=' ', start_char='s', debug=False):
-        self.delete_me = True
         self.starting_time = 0
         self.cur_pos = (0, 0)
         self.goals = list()
@@ -48,8 +47,6 @@ class Explorer:
         self.num_steps = 0
         self.explorer_map = explorer_map
         self.debug = debug
-        self.start_pos = (0,0)
-        self.ending_pos = (0,0)
         self.nodes_to_visit = list()
         self.root = Node(None,list(),(0,0)) #Create the root
 
@@ -65,9 +62,20 @@ class Explorer:
     #Instead of iterating 2 times
     #But we gotta choose one before running the code, my part need my structure
 
+    def reset(self):
+        self.starting_time = 0
+        self.cur_pos = (0, 0)
+        self.goals = list()
+        self.explored_positions = dict()
+        self.explored_positions_l = list()
+        self.num_goals_found = 0
+        self.num_goals = 0
+        self.num_steps = 0
+        self.nodes_to_visit = list()
+        self.root = Node(None,list(),(0,0)) #Create the root
+
     def find_POIs(self):
         start_found = False
-        a_goal_found = False
         # ironic we have to search for the start...
         cur_map = self.explorer_map.explorer_map
         for i in range(0, len(cur_map)):
@@ -75,30 +83,11 @@ class Explorer:
                 cur_char = cur_map[i][j]
                 if cur_char == self.start_char:
                     self.cur_pos = (j, i)
+                    self.root.position = self.cur_pos
+                    self.nodes_to_visit.append(self.root)
                     start_found = True
 
-                if cur_char == self.goal_char:
-                    a_goal_found = True
-                    self.num_goals += 1
-
-        # for line in cur_map:
-        #      #Find if the character is in the line
-        #     if self.start_char in line:
-        #         #Get the line and position in the line of the character
-        #         self.start_pos = (line_ct,line.index(self.start_char))
-        #         # print self.start_pos
-        #         # self.nodes_to_visit.append((self.start_pos))
-        #         self.root.position = self.start_pos
-        #         self.nodes_to_visit.append(self.root)
-        #         # print "Nodes to visit: ", self.nodes_to_visit
-        #         start_found = True
-        #
-        #     if self.goal_char in line:
-        #         a_goal_found = True
-        #         self.num_goals += line.count(self.goal_char)
-        #     line_ct += 1
-        # print self.num_goals
-        return start_found and a_goal_found
+        return start_found
 
     def get_explored_map(self, debug=False):
         map_state = ''
@@ -148,6 +137,8 @@ class Explorer:
 
     def explore(self, explore_types):
         for explore_type in explore_types:
+
+            print "\n********************************************************************************"
             if explore_type == self.DFS_TYPE:
                 search_type = "Depth-First Search"
             elif explore_type == self.BFS_TYPE:
@@ -163,35 +154,29 @@ class Explorer:
                 print "I couldn't find a start or goal!"
 
             print "Looks like I'll be doing a " + search_type + "!"
-            print "I'll be trying to find " + str(self.num_goals) \
-                + " goal(s)."
             print "I'll be starting at " + str(self.cur_pos)
 
             print "Starting the timer...now!"
             self.start_timer()
             if explore_type == self.DFS_TYPE:
-                success = self.DFS()
+                self.DFS()
             else:
-                success = self.BFS()
+                self.BFS()
 
-            #before printing the map reset to the ending position
-            if success:
-                self.cur_pos = self.ending_pos
             self.print_explored_map()
 
             # convert microsecond to millisecond
             duration = self.end_timer() / 1000
 
-            success_str = "success" if success else "failure"
-
             print "It took me " + str(duration) \
-                + " milliseconds to finish a search_type."
+                + " milliseconds to finish a " + search_type
             print "I explored " + str(len(self.explored_positions)) \
-                + " positions before finding the goal(s) or giving up."
+                + " positions before finishing my search."
             print "The exploration took " + str(self.num_steps) + " steps."
-            print "I found " + str(self.num_goals_found) + \
-                " goals out of a possible " + str(self.num_goals)
-            print "The search was ultimately a " + success_str + "!"
+            print "I found " + str(self.num_goals_found) + " goals.\n"
+
+            # reset in prep for the next search
+            self.reset()
 
     def valid_new_exploration(self, x, y):
         valid_new_exploration = False
@@ -211,7 +196,6 @@ class Explorer:
     def DFS(self):
         if self.debug:
             self.print_explored_map(debug=True)
-        done_exploring = False
 
         # update our new position and find the current character
         cur_row = self.cur_pos[0]
@@ -225,65 +209,52 @@ class Explorer:
         if cur_char == self.goal_char:
             self.num_goals_found += 1
 
-        # return if we have met our expected goal
-        if self.num_goals_found >= self.num_goals:
-            done_exploring = True
-            self.ending_pos = (cur_row, cur_col)
-
         # check down
-        if self.valid_new_exploration(cur_row, cur_col+1) and not done_exploring:
+        if self.valid_new_exploration(cur_row, cur_col+1):
             self.num_steps += 1
             self.cur_pos = (cur_row, cur_col+1)
-            done_exploring = self.DFS()
-            if not done_exploring:
-                self.num_steps += 1
-                self.cur_pos = (cur_row, cur_col)
-                if self.debug:
-                    self.print_explored_map(debug=True)
+            self.DFS()
+            self.num_steps += 1
+            self.cur_pos = (cur_row, cur_col)
+            if self.debug:
+                self.print_explored_map(debug=True)
 
         # check right
-        if self.valid_new_exploration(cur_row+1, cur_col) and not done_exploring:
+        if self.valid_new_exploration(cur_row+1, cur_col):
             self.num_steps += 1
             self.cur_pos = (cur_row+1, cur_col)
-            done_exploring = self.DFS()
-            if not done_exploring:
-                self.num_steps += 1
-                self.cur_pos = (cur_row, cur_col)
-                if self.debug:
-                    self.print_explored_map(debug=True)
+            self.DFS()
+            self.num_steps += 1
+            self.cur_pos = (cur_row, cur_col)
+            if self.debug:
+                self.print_explored_map(debug=True)
 
         # check left
-        if self.valid_new_exploration(cur_row-1, cur_col) and not done_exploring:
+        if self.valid_new_exploration(cur_row-1, cur_col):
             self.num_steps += 1
             self.cur_pos = (cur_row-1, cur_col)
-            done_exploring = self.DFS()
-            if not done_exploring:
-                self.num_steps += 1
-                self.cur_pos = (cur_row, cur_col)
-                if self.debug:
-                    self.print_explored_map(debug=True)
+            self.DFS()
+            self.num_steps += 1
+            self.cur_pos = (cur_row, cur_col)
+            if self.debug:
+                self.print_explored_map(debug=True)
 
         # check up
-        if self.valid_new_exploration(cur_row, cur_col-1) and not done_exploring:
+        if self.valid_new_exploration(cur_row, cur_col-1):
             self.num_steps += 1
             self.cur_pos = (cur_row, cur_col-1)
-            done_exploring = self.DFS()
-            if not done_exploring:
-                self.num_steps += 1
-                self.cur_pos = (cur_row, cur_col)
-                if self.debug:
-                    self.print_explored_map(debug=True)
-
-        # no where else to look
-        return done_exploring
+            self.DFS()
+            self.num_steps += 1
+            self.cur_pos = (cur_row, cur_col)
+            if self.debug:
+                self.print_explored_map(debug=True)
 
     #Pending to add the time and steps counter
     def BFS(self):
-        done_exploring = False
         cur_node = self.root
         moves_to_do = list()
 
-        while (done_exploring != True and len(self.nodes_to_visit) != 0):
+        while (len(self.nodes_to_visit) != 0):
             # # os.system('clear')
             # print self.get_explored_map()
             # time.sleep(.1)
@@ -303,27 +274,22 @@ class Explorer:
             cur_char = self.explorer_map.get_char(cur_row,cur_col)
 
             #Mark our position as visited
-            if cur_node.position not in self.explored_positions:
-                self.explored_positions.append((cur_row,cur_col))
+            if cur_node.position not in self.explored_positions_l:
+                self.explored_positions_l.append((cur_row,cur_col))
 
-            self.explored_positions.sort()
+            self.explored_positions_l.sort()
 
-            # print "I've explored: ", self.explored_positions
+            # print "I've explored: ", self.explored_positions_l
 
             #Check if this position is a goal
             if cur_char == self.goal_char:
                 self.num_goals_found +=1
 
-            #Finish exploring if number of all goals are found
-            # if self.num_goals_found == self.num_goals: #It will never be greater
-            #     done_exploring = True
-
             #Get the children of the current node
-            if not done_exploring:
-                cur_node.children = self.find_children(cur_node)
+            cur_node.children = self.find_children(cur_node)
                 # print "Number of children found: ", len(cur_node.children)
 
-            if not done_exploring and len(self.nodes_to_visit) !=0:
+            if len(self.nodes_to_visit) !=0:
                 #Find the moves neccesary to move to the next position
                 moves_to_do = self.move_to_position(cur_node,self.nodes_to_visit[0])
                 # print "List of moves: ", moves_to_do
@@ -336,8 +302,6 @@ class Explorer:
                     # time.sleep(.1)
                 # print "\n********************************************************************************"
 
-
-        return done_exploring
 
     def nodes_to_visit_checker(self,(cur_row,cur_col)):
         down_flag = True
