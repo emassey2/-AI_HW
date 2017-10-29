@@ -203,7 +203,7 @@ class Explorer:
     # returns true when we find all the goals expected
     def DFS(self):
         if self.debug:
-            self.print_explored_map(debug=True)
+            self.print_explored_map(self.DFS_TYPE, debug=True)
 
         # update our new position and find the current character
         cur_row = self.cur_pos[0]
@@ -225,7 +225,7 @@ class Explorer:
             self.num_steps += 1
             self.cur_pos = (cur_row, cur_col)
             if self.debug:
-                self.print_explored_map(debug=True)
+                self.print_explored_map(self.DFS_TYPE, debug=True)
 
         # check right
         if self.valid_new_exploration(cur_row+1, cur_col):
@@ -235,7 +235,7 @@ class Explorer:
             self.num_steps += 1
             self.cur_pos = (cur_row, cur_col)
             if self.debug:
-                self.print_explored_map(debug=True)
+                self.print_explored_map(self.DFS_TYPE, debug=True)
 
         # check left
         if self.valid_new_exploration(cur_row-1, cur_col):
@@ -245,7 +245,7 @@ class Explorer:
             self.num_steps += 1
             self.cur_pos = (cur_row, cur_col)
             if self.debug:
-                self.print_explored_map(debug=True)
+                self.print_explored_map(self.DFS_TYPE, debug=True)
 
         # check up
         if self.valid_new_exploration(cur_row, cur_col-1):
@@ -255,7 +255,7 @@ class Explorer:
             self.num_steps += 1
             self.cur_pos = (cur_row, cur_col)
             if self.debug:
-                self.print_explored_map(debug=True)
+                self.print_explored_map(self.DFS_TYPE, debug=True)
 
     #Pending to add the time and steps counter
     def BFS(self):
