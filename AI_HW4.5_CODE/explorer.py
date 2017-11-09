@@ -31,7 +31,7 @@ def hilite(string, status, bold):
 class Explorer:
 
     DFS_ITR_TYPE = 0
-    DEBUG_LEVEL = 1
+    DEBUG_LEVEL = 0
     SUCCESS = 0
     LIMITED = 1
     FAILURE = 2
@@ -198,6 +198,8 @@ class Explorer:
                     print "I explored " + str(len(self.explored_positions)) \
                         + " positions before finishing my search."
                 print "The exploration took " + str(self.num_steps) + " steps."
+                print "It will take " + str(len(self.move_list)) + \
+                    " step(s) to reach our goal."
 
                 result_string = "FAILURE"
                 if search_result == self.SUCCESS:
@@ -256,7 +258,7 @@ class Explorer:
 
     # returns true when we find all the goal
     def DFS_ITR_recursive(self, cur_lvl, max_lvl):
-        if self.debug:
+        if self.debug and self.DEBUG_LEVEL >= 2:
             self.print_explored_map(debug=True)
 
         # update our new position and find the current character
@@ -292,7 +294,8 @@ class Explorer:
             search_result = min(sub_search_result, search_result)
             self.num_steps += 1
             self.cur_pos = (cur_row, cur_col)
-            if self.debug:
+
+            if self.debug and self.DEBUG_LEVEL >=2:
                 self.print_explored_map(debug=True)
 
         # check right
@@ -304,7 +307,8 @@ class Explorer:
             search_result = min(sub_search_result, search_result)
             self.num_steps += 1
             self.cur_pos = (cur_row, cur_col)
-            if self.debug:
+
+            if self.debug and self.DEBUG_LEVEL >=2:
                 self.print_explored_map(debug=True)
 
         # check left
@@ -316,7 +320,8 @@ class Explorer:
             search_result = min(sub_search_result, search_result)
             self.num_steps += 1
             self.cur_pos = (cur_row, cur_col)
-            if self.debug:
+
+            if self.debug and self.DEBUG_LEVEL >=2:
                 self.print_explored_map(debug=True)
 
         # check up
@@ -328,7 +333,8 @@ class Explorer:
             search_result = min(sub_search_result, search_result)
             self.num_steps += 1
             self.cur_pos = (cur_row, cur_col)
-            if self.debug:
+
+            if self.debug and self.DEBUG_LEVEL >=2:
                 self.print_explored_map(debug=True)
 
         if search_result != self.SUCCESS:
@@ -384,15 +390,16 @@ def test(folder, files):
     print "\n********************************************************************************"
     print "Running an example in debug mode!"
     debug_explorer = Explorer(Explorer_Map(folder + files[0]), debug=True)
+    debug_explorer.DEBUG_LEVEL = 1
     debug_search_types = list()
     debug_search_types.append(debug_explorer.DFS_ITR_TYPE)
     debug_explorer.explore(search_types)
     debug_explorer.explore(debug_search_types)
     print "********************************************************************************\n"
+
 if __name__ == '__main__':
     #TODO probably switch to iterative...
     sys.setrecursionlimit(20000)
-    #files = ["map1.txt", "map2.txt", "map3.txt"]
-    files = ["map3.txt"]
+    files = ["map1.txt", "map2.txt", "map3.txt"]
     map_folder = "./maps/"
     test(map_folder, files)
