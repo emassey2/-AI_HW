@@ -159,7 +159,7 @@ def get_num_misplaced_tiles(cur_puzzle, cur_state, goal_state):
     return misplaced_tiles
 
 
-def greedy_search(puzzle, heuristic, previous_states):
+def greedy_search(puzzle, heuristic, previous_states, path_to_goal):
     goal_achieved = False
 
     # check for our goal state
@@ -183,13 +183,26 @@ def greedy_search(puzzle, heuristic, previous_states):
 
         # sort and choose the first (best) move
         ranked_states.sort()
-        top_ranked_state = ranked_states[0]
+
+        while len(ranked_states) != 0 and not goal_achieved:
+            top_ranked_state = ranked_states.pop(0)
+
+            # make sure we haven't visited this state before
+            if top_ranked_state not in previous_states:
+                # don't keep searching if we have run into a dead end
+                # ie we have not states left unexplored
+                # because we are greedy do the best move
+                puzzle.set_cur_state(top_ranked_state[1])
+                path_to_goal.append(top_ranked_state)
+                previous_states.append(top_ranked_state)
+                goal_achieved = greedy_search(puzzle, heuristic, previous_states, path_to_goal)
+
+                # if we didn't find the solution remove the state we tried from our path_to_goal
+                if not goal_achieved:
+                    path_to_goal.pop()
+
         #print top_ranked_state[0], top_ranked_state[1]
 
-        # because we are greedy do the best move
-        puzzle.set_cur_state(top_ranked_state[1])
-        previous_states.append(top_ranked_state)
-        goal_achieved = greedy_search(puzzle, heuristic, previous_states)
 
     return goal_achieved
 
@@ -210,14 +223,19 @@ if __name__ == '__main__':
                       (get_manhattan_dist, "manhattand distance")]
         for heuristic in heuristics:
             states = list()
+            path_to_goal = list()
             print "\n\nTrying ", heuristic[1]
-            greedy_search(puzzle, heuristic[0], states)
+            print "Starting State"
+            puzzle.print_state()
+            greedy_search(puzzle, heuristic[0], states, path_to_goal)
             print "Final State"
             puzzle.print_state()
 
-            print "Path States"
-            for state in states:
-                print "Heuristic:", state[0], "\nState:\n", puzzle.twoD_array_to_str(state[1])
+            print "We explored " + str(len(states)) + " states"
+            print "The path to the goal is " + str(len(path_to_goal)) + " states long"
+            #print "Path to goal"
+            #for state in path_to_goal:
+            #    print "Heuristic:", state[0], "\nState:\n", puzzle.twoD_array_to_str(state[1])
             print "Press enter to continue"
             raw_input()
             puzzle = copy.deepcopy(cur_puzzle)
