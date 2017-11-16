@@ -2,6 +2,7 @@
 
 import copy
 import sys
+import heapq
 
 # I really wish python had enums...
 class Direction(object):
@@ -16,14 +17,30 @@ class Direction(object):
 
     DIRECTIONS = [UP, DOWN, LEFT, RIGHT]
 
+class a_star_node:
+    def __init__(self, puzzle,parent, movement_cost, heuristic_cost):
+        #Puzzle object
+        self.puzzle = puzzle
+        self.parent = parent
+        #g(n)
+        self.movement_cost = movement_cost
+        #heuristic cost h(n)
+        self.heuristic_cost = heuristic_cost
+
+    def total_cost(self):
+        #Calculate the total cost of the corresponding node
+
+        return self.movement_cost + self.heuristic_cost
+
+
 class eight_puzzle:
     PUZZLE_SIDE_LENGTH = 3
 
 
-    def __init__(self, initial_state_str, goal_state_str):
+    def __init__(self, initial_state, goal_state):
         # state is represented by a 3x3 matrix
-        self.cur_state = self.str_to_twoD_array(initial_state_str)
-        self.goal_state = self.str_to_twoD_array(goal_state_str)
+        self.cur_state = initial_state
+        self.goal_state = goal_state
 
 
     def str_to_twoD_array(self, state_str):
@@ -206,12 +223,142 @@ def greedy_search(puzzle, heuristic, previous_states, path_to_goal):
 
     return goal_achieved
 
+def contains_puzzle_state(puzzle_list,state):
+    index = 0
+    for _,a_start_object in puzzle_list:
 
+        #Get the string corresponding to the current state
+        a_start_state_str = a_start_object.puzzle.get_state()
+
+        #Convert the state to test as a string
+        state_str = a_start_object.puzzle.twoD_array_to_str(state)
+
+        #Check if the state_str is inside the list
+        # print "state string ", state_str
+        # print "a_start_string", a_start_state_str
+        if state_str == a_start_state_str:
+            # print "same state"
+
+            return True, index
+        index += 1
+    return False, -1
+
+
+
+def a_star(puzzle, heuristic,states,path_to_goal):
+    explored_states = list()
+    frontier = list()
+
+    #calculate the heuristic for the cur_state
+    heuristic_score = heuristic(puzzle, puzzle.cur_state, puzzle.goal_state)
+    root_node = a_star_node(puzzle,None,0,heuristic_score)
+
+    #add root node to the frontier
+    heapq.heappush(frontier,(root_node.total_cost(),root_node))
+
+    goal_achieved = False
+    goal_node = None
+
+    while (len(frontier)!=0 and not goal_achieved) :
+
+
+        #Get the first element of the queue
+        total_cost, cur_a_star_node = heapq.heappop(frontier)
+
+        #Add current state to the explored_states
+        explored_states.append((cur_a_star_node.total_cost(),
+                                                    cur_a_star_node))
+
+        #Perform goal test
+        if cur_a_star_node.heuristic_cost == 0:
+            # print "We have fulfilled our purpose"
+            goal_achieved = True
+            goal_node = cur_a_star_node
+
+        else:
+            #Get a list of all the possible states
+            possible_states = cur_a_star_node.puzzle.get_one_move_states()
+
+            #Evaluate all of our possible moves
+            for state in possible_states:
+                # print "current state \n", puzzle.twoD_array_to_str(state)
+                # print "Number of explored states ", len(explored_states)
+                # print "Number of elements in the frontier", len(frontier)
+
+                #Verify if the state is in the explored list
+                state_in_previously_explored, explored_index = \
+                    contains_puzzle_state(explored_states,state)
+
+                #Verify if the state is in the frontier
+                state_in_frontier, frontier_index = \
+                    contains_puzzle_state(frontier,state)
+
+                #Calculate new movement_cost
+                new_movement_cost = cur_a_star_node.movement_cost+1
+
+                if not state_in_frontier and not state_in_previously_explored:
+                    #Create a new puzzle object
+                    new_puzzle = eight_puzzle(state,
+                                        cur_a_star_node.puzzle.goal_state)
+
+                    #Calculate new heuristic
+                    new_heuristic = heuristic(new_puzzle,
+                                                new_puzzle.cur_state,
+                                                new_puzzle.goal_state)
+
+                    #Create new a_star object
+                    new_a_star_node = a_star_node(new_puzzle,
+                                                   cur_a_star_node,
+                                                   new_movement_cost,
+                                                   new_heuristic)
+
+                    #Push element in the frontier
+                    heapq.heappush(frontier,(new_a_star_node.total_cost(),
+                                            new_a_star_node))
+
+                else:
+                    state_in_frontier, frontier_index = \
+                        contains_puzzle_state(frontier,state)
+                    if state_in_frontier:
+                        # print "state already in the frontier"
+
+                        #Verify that the new movement_cost less than the current cost
+
+                        if new_movement_cost < frontier[frontier_index][1].movement_cost:
+                            # print "Removing state from frontier"
+                            # print "frontier index", frontier_index
+                            # print "length of the frontier", len(frontier)
+                            del frontier[frontier_index]
+
+                            heapq.heappush(frontier,(new_a_star_node.total_cost(),
+                                                new_a_star_node))
+
+                    if state_in_previously_explored:
+                        # print "state already in the explored list"
+                        if new_movement_cost < explored_states[explored_index][1].movement_cost:
+                            # print "Removing state from explored states"
+                            del explored_states[explored_index]
+                            #add the current state to the frontier
+                            heapq.heappush(frontier,(new_a_star_node.total_cost(),
+                                            new_a_star_node))
+    if goal_achieved:
+        current_node = goal_node
+        while(current_node):
+            path_to_goal.insert(0, (current_node.total_cost(),
+                                current_node.puzzle.cur_state))
+            current_node = current_node.parent
+    states = explored_states
+    return goal_achieved
 
 if __name__ == '__main__':
     sys.setrecursionlimit(10000)
-    easy_puzzle = eight_puzzle("876514203", "876543210")
-    hard_puzzle = eight_puzzle("148362057", "876543210")
+    initial_state_easy = [[8,7,6],[5,1,4],[2,0,3]]
+    initial_state_hard = [[1,4,8],[3,6,2],[0,5,7]]
+    goal_state = [[8,7,6],[5,4,3],[2,1,0]]
+
+    easy_puzzle = eight_puzzle(initial_state_easy,goal_state)
+    hard_puzzle = eight_puzzle(initial_state_hard,goal_state)
+
     puzzles = [easy_puzzle, hard_puzzle]
     for cur_puzzle in puzzles:
         puzzle = copy.deepcopy(cur_puzzle)
@@ -219,23 +366,25 @@ if __name__ == '__main__':
         puzzle.print_state()
         print "Goal State"
         print puzzle.twoD_array_to_str(puzzle.goal_state)
-        heuristics = [(get_num_misplaced_tiles, "misplaced tiles"), \
-                      (get_manhattan_dist, "manhattand distance")]
+        heuristics = [(get_manhattan_dist, "manhattand distance"), \
+                      (get_num_misplaced_tiles, "misplaced tiles")]
         for heuristic in heuristics:
             states = list()
             path_to_goal = list()
             print "\n\nTrying ", heuristic[1]
             print "Starting State"
             puzzle.print_state()
-            greedy_search(puzzle, heuristic[0], states, path_to_goal)
-            print "Final State"
-            puzzle.print_state()
+            # greedy_search(puzzle, heuristic[0], states, path_to_goal)
+            goal_achieved = a_star(puzzle,heuristic[0],states,path_to_goal)
+
+            # print "Final State"
+            # puzzle.print_state()
 
             print "We explored " + str(len(states)) + " states"
             print "The path to the goal is " + str(len(path_to_goal)) + " states long"
             #print "Path to goal"
-            #for state in path_to_goal:
-            #    print "Heuristic:", state[0], "\nState:\n", puzzle.twoD_array_to_str(state[1])
+            for state in path_to_goal:
+               print "Heuristic:", state[0], "\nState:\n", puzzle.twoD_array_to_str(state[1])
             print "Press enter to continue"
             raw_input()
             puzzle = copy.deepcopy(cur_puzzle)
