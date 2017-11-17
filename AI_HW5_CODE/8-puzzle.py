@@ -171,16 +171,23 @@ def get_manhattan_dist(cur_puzzle, cur_state, goal_state):
 
 
 def get_num_misplaced_tiles(cur_puzzle, cur_state, goal_state):
-    cur_positions = cur_puzzle.get_number_positions(cur_state)
-    goal_positions = cur_puzzle.get_number_positions(goal_state)
+    #cur_positions = cur_puzzle.get_number_positions(cur_state)
+    #goal_positions = cur_puzzle.get_number_positions(goal_state)
 
     misplaced_tiles = 0
 
+    for i in xrange(0, cur_puzzle.PUZZLE_SIDE_LENGTH):
+        for j in xrange(0, cur_puzzle.PUZZLE_SIDE_LENGTH):
+            if cur_state[i][j] != goal_state[i][j]:
+                misplaced_tiles += 1
+
+    return misplaced_tiles
+
     # add one for each misplaced tile (compare x,y cords)
-    for i in xrange(0, cur_puzzle.PUZZLE_SIDE_LENGTH**2):
-        if (cur_positions[i][1] != goal_positions[i][1] \
-            or cur_positions[i][2] != goal_positions[i][2]):
-            misplaced_tiles += 1
+    #for i in xrange(0, cur_puzzle.PUZZLE_SIDE_LENGTH**2):
+    #    if (cur_positions[i][1] != goal_positions[i][1] \
+    #        or cur_positions[i][2] != goal_positions[i][2]):
+    #        misplaced_tiles += 1
 
     return misplaced_tiles
 
@@ -254,7 +261,10 @@ def contains_puzzle_state(puzzle_list,state):
 
 
 
-def a_star(puzzle, heuristic,states,path_to_goal):
+def a_star(puzzle, heuristic, states, path_to_goal):
+    # note, the frontier_album (the dictionary) is only used to know when we
+    # need to iterate through our priority queue
+    # We've trade space complexity for time
     explored_states = dict()
     frontier_album = dict()
     frontier = list()
@@ -277,12 +287,11 @@ def a_star(puzzle, heuristic,states,path_to_goal):
 
         #Get the first element of the queue
         total_cost, cur_a_star_node = heapq.heappop(frontier)
+        del frontier_album[cur_a_star_node.puzzle.get_state()]
 
         #Add current state to the explored_states
         explored_states[cur_a_star_node.puzzle.get_state()] = \
             (cur_a_star_node.total_cost(),cur_a_star_node)
-        # explored_states.append((cur_a_star_node.total_cost(),
-        #                                             cur_a_star_node))
 
         #Perform goal test
         if cur_a_star_node.heuristic_cost == 0:
@@ -291,17 +300,11 @@ def a_star(puzzle, heuristic,states,path_to_goal):
             goal_node = cur_a_star_node
 
         else:
-            # print "Current cost: ",cur_a_star_node.movement_cost
-            # print "Current heuristic: ", cur_a_star_node.heuristic_cost
-            print "length of explored states: ", len(explored_states)
             #Get a list of all the possible states
             possible_states = cur_a_star_node.puzzle.get_one_move_states()
 
             #Evaluate all of our possible moves
             for state in possible_states:
-                # print "current state \n", puzzle.twoD_array_to_str(state)
-                # print "Number of explored states ", len(explored_states)
-                # print "Number of elements in the frontier", len(frontier)
 
                 #Verify if the state is in the explored list
                 state_str_key = cur_a_star_node.puzzle.twoD_array_to_str(state)
@@ -310,16 +313,14 @@ def a_star(puzzle, heuristic,states,path_to_goal):
                     state_in_previously_explored = True
                 else:
                     state_in_previously_explored = False
-                # state_in_previously_explored, explored_index = \
-                #     contains_puzzle_state(explored_states,state)
 
                 #Verify if the state is in the frontier
 
                 if state_str_key in frontier_album:
                     state_in_frontier = True
+                    frontier_index = contains_puzzle_state(frontier,state)
                 else:
                     state_in_frontier = False
-                    frontier_index = contains_puzzle_state(frontier,state)
 
                 #Calculate new movement_cost
                 new_movement_cost = cur_a_star_node.movement_cost+1
@@ -348,41 +349,54 @@ def a_star(puzzle, heuristic,states,path_to_goal):
 
 
                 else:
+                    # create a new and improved puzzle object to replace
+                    # the previous less effiecent one
+                    improved_puzzle = eight_puzzle(state,
+                                        cur_a_star_node.puzzle.goal_state)
+                    #Calculate new heuristic
+                    improved_heurisitc = heuristic(improved_puzzle,
+                                                improved_puzzle.cur_state,
+                                                improved_puzzle.goal_state)
+                    improved_a_star_node = a_star_node(improved_puzzle,
+                                                       cur_a_star_node,
+                                                       new_movement_cost,
+                                                       improved_heurisitc)
+
                     if state_in_frontier:
-                        # print "state already in the frontier"
+                        #print "state already in the frontier"
 
                         #Verify that the new movement_cost less than the current cost
 
                         if new_movement_cost < frontier[frontier_index][1].movement_cost:
-                            # print "Removing state from frontier"
-                            # print "frontier index", frontier_index
-                            # print "length of the frontier", len(frontier)
                             del frontier[frontier_index]
 
-                            heapq.heappush(frontier,(new_a_star_node.total_cost(),
-                                                new_a_star_node))
+                            heapq.heappush(frontier,(improved_a_star_node.total_cost(),
+                                                improved_a_star_node))
 
-                            frontier_album[new_a_star_node.puzzle.get_state()] = \
-                                    (new_a_star_node.total_cost(),new_a_star_node)
+                            frontier_album[improved_a_star_node.puzzle.get_state()] = \
+                                    (improved_a_star_node.total_cost(),improved_a_star_node)
 
                     if state_in_previously_explored:
-                        # print "state already in the explored list"
                         if new_movement_cost < explored_states[state_str_key][1].movement_cost:
-                            print "Removing state from explored states"
+
                             del explored_states[state_str_key]
                             #add the current state to the frontier
-                            heapq.heappush(frontier,(new_a_star_node.total_cost(),
-                                            new_a_star_node))
+                            heapq.heappush(frontier,(improved_a_star_node.total_cost(),
+                                            improved_a_star_node))
 
-                            frontier_album[new_a_star_node.puzzle.get_state()] = \
-                                    (new_a_star_node.total_cost(),new_a_star_node)
+                            frontier_album[improved_a_star_node.puzzle.get_state()] = \
+                                    (improved_a_star_node.total_cost(),improved_a_star_node)
     if goal_achieved:
         current_node = goal_node
         while(current_node):
             path_to_goal.insert(0, (current_node.total_cost(),
                                 current_node.puzzle.cur_state))
             current_node = current_node.parent
-    states = explored_states
+
+    states = copy.deepcopy(explored_states)
+    print "states", len(states)-1 #-1 for the starting position
+    print "ptg", len(path_to_goal)-1 #-1 for the starting position
+
     return goal_achieved
 
 if __name__ == '__main__':
@@ -401,30 +415,30 @@ if __name__ == '__main__':
         puzzle.print_state()
         print "Goal State"
         print puzzle.twoD_array_to_str(puzzle.goal_state)
-        heuristics = [(get_manhattan_dist, "manhattand distance"), \
+        algorithms = [(greedy_search, "greedy search"), \
+                     (a_star, "A*")]
+        heuristics = [(get_manhattan_dist, "manhattan distance"), \
                       (get_num_misplaced_tiles, "misplaced tiles")]
-        for heuristic in heuristics:
-            states = list()
-            path_to_goal = list()
-            print "\n\nTrying ", heuristic[1]
-            print "Starting State"
-            puzzle.print_state()
-            print "Starting the timer...now!"
-            puzzle.start_timer()
-            # greedy_search(puzzle, heuristic[0], states, path_to_goal)
-            goal_achieved = a_star(puzzle,heuristic[0],states,path_to_goal)
+        for algorithm in algorithms:
+            for heuristic in heuristics:
+                states = list()
+                path_to_goal = list()
+                print "\n\nTrying ", heuristic[1]
+                print "Starting State"
+                puzzle.print_state()
+                print "Starting the timer...now!"
+                puzzle.start_timer()
+                algorithm[0](puzzle, heuristic[0], states, path_to_goal)
 
-            duration = puzzle.end_timer()
-            print "It took me " + str(duration) \
-                + " seconds to finish a search_type."
-            # print "Final State"
-            # puzzle.print_state()
+                print "The path to the goal is " + str(len(path_to_goal)) + " states long"
+                #for state in path_to_goal:
+                #   print "Score:", state[0], "\nState:\n", puzzle.twoD_array_to_str(state[1])
 
-            print "We explored " + str(len(states)) + " states"
-            print "The path to the goal is " + str(len(path_to_goal)) + " states long"
-            #print "Path to goal"
-            for state in path_to_goal:
-               print "Heuristic:", state[0], "\nState:\n", puzzle.twoD_array_to_str(state[1])
-            print "Press enter to continue"
-            raw_input()
-            puzzle = copy.deepcopy(cur_puzzle)
+                duration = puzzle.end_timer()
+                print "It took me " + str(duration) \
+                    + " seconds to finish", algorithm[1], "using", heuristic[1]
+
+                print "We explored " + str(len(states)) + " states"
+                print "Press enter to continue"
+                raw_input()
+                puzzle = copy.deepcopy(cur_puzzle)
