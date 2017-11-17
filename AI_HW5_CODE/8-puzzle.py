@@ -3,6 +3,8 @@
 import copy
 import sys
 import heapq
+import time
+import datetime
 
 # I really wish python had enums...
 class Direction(object):
@@ -145,6 +147,13 @@ class eight_puzzle:
     def print_state(self):
         print self.get_state()
 
+    def start_timer(self):
+        self.starting_time = time.clock()
+
+    def end_timer(self):
+        delta = time.clock() - self.starting_time
+        return delta
+
 
 
 def get_manhattan_dist(cur_puzzle, cur_state, goal_state):
@@ -239,14 +248,15 @@ def contains_puzzle_state(puzzle_list,state):
         if state_str == a_start_state_str:
             # print "same state"
 
-            return True, index
+            return index
         index += 1
-    return False, -1
+    return -1
 
 
 
 def a_star(puzzle, heuristic,states,path_to_goal):
-    explored_states = list()
+    explored_states = dict()
+    frontier_album = dict()
     frontier = list()
 
     #calculate the heuristic for the cur_state
@@ -255,6 +265,9 @@ def a_star(puzzle, heuristic,states,path_to_goal):
 
     #add root node to the frontier
     heapq.heappush(frontier,(root_node.total_cost(),root_node))
+    #Add root node to the album_frontier
+    frontier_album[root_node.puzzle.get_state()] = \
+        (root_node.total_cost(),root_node)
 
     goal_achieved = False
     goal_node = None
@@ -266,8 +279,10 @@ def a_star(puzzle, heuristic,states,path_to_goal):
         total_cost, cur_a_star_node = heapq.heappop(frontier)
 
         #Add current state to the explored_states
-        explored_states.append((cur_a_star_node.total_cost(),
-                                                    cur_a_star_node))
+        explored_states[cur_a_star_node.puzzle.get_state()] = \
+            (cur_a_star_node.total_cost(),cur_a_star_node)
+        # explored_states.append((cur_a_star_node.total_cost(),
+        #                                             cur_a_star_node))
 
         #Perform goal test
         if cur_a_star_node.heuristic_cost == 0:
@@ -276,6 +291,9 @@ def a_star(puzzle, heuristic,states,path_to_goal):
             goal_node = cur_a_star_node
 
         else:
+            # print "Current cost: ",cur_a_star_node.movement_cost
+            # print "Current heuristic: ", cur_a_star_node.heuristic_cost
+            print "length of explored states: ", len(explored_states)
             #Get a list of all the possible states
             possible_states = cur_a_star_node.puzzle.get_one_move_states()
 
@@ -286,12 +304,22 @@ def a_star(puzzle, heuristic,states,path_to_goal):
                 # print "Number of elements in the frontier", len(frontier)
 
                 #Verify if the state is in the explored list
-                state_in_previously_explored, explored_index = \
-                    contains_puzzle_state(explored_states,state)
+                state_str_key = cur_a_star_node.puzzle.twoD_array_to_str(state)
+
+                if state_str_key in explored_states:
+                    state_in_previously_explored = True
+                else:
+                    state_in_previously_explored = False
+                # state_in_previously_explored, explored_index = \
+                #     contains_puzzle_state(explored_states,state)
 
                 #Verify if the state is in the frontier
-                state_in_frontier, frontier_index = \
-                    contains_puzzle_state(frontier,state)
+
+                if state_str_key in frontier_album:
+                    state_in_frontier = True
+                else:
+                    state_in_frontier = False
+                    frontier_index = contains_puzzle_state(frontier,state)
 
                 #Calculate new movement_cost
                 new_movement_cost = cur_a_star_node.movement_cost+1
@@ -315,10 +343,11 @@ def a_star(puzzle, heuristic,states,path_to_goal):
                     #Push element in the frontier
                     heapq.heappush(frontier,(new_a_star_node.total_cost(),
                                             new_a_star_node))
+                    frontier_album[new_a_star_node.puzzle.get_state()] = \
+                            (new_a_star_node.total_cost(),new_a_star_node)
+
 
                 else:
-                    state_in_frontier, frontier_index = \
-                        contains_puzzle_state(frontier,state)
                     if state_in_frontier:
                         # print "state already in the frontier"
 
@@ -333,14 +362,20 @@ def a_star(puzzle, heuristic,states,path_to_goal):
                             heapq.heappush(frontier,(new_a_star_node.total_cost(),
                                                 new_a_star_node))
 
+                            frontier_album[new_a_star_node.puzzle.get_state()] = \
+                                    (new_a_star_node.total_cost(),new_a_star_node)
+
                     if state_in_previously_explored:
                         # print "state already in the explored list"
-                        if new_movement_cost < explored_states[explored_index][1].movement_cost:
-                            # print "Removing state from explored states"
-                            del explored_states[explored_index]
+                        if new_movement_cost < explored_states[state_str_key][1].movement_cost:
+                            print "Removing state from explored states"
+                            del explored_states[state_str_key]
                             #add the current state to the frontier
                             heapq.heappush(frontier,(new_a_star_node.total_cost(),
                                             new_a_star_node))
+
+                            frontier_album[new_a_star_node.puzzle.get_state()] = \
+                                    (new_a_star_node.total_cost(),new_a_star_node)
     if goal_achieved:
         current_node = goal_node
         while(current_node):
@@ -374,9 +409,14 @@ if __name__ == '__main__':
             print "\n\nTrying ", heuristic[1]
             print "Starting State"
             puzzle.print_state()
+            print "Starting the timer...now!"
+            puzzle.start_timer()
             # greedy_search(puzzle, heuristic[0], states, path_to_goal)
             goal_achieved = a_star(puzzle,heuristic[0],states,path_to_goal)
 
+            duration = puzzle.end_timer()
+            print "It took me " + str(duration) \
+                + " seconds to finish a search_type."
             # print "Final State"
             # puzzle.print_state()
 
