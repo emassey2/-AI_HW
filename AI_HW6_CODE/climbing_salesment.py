@@ -3,8 +3,9 @@
 import re
 import math
 import random
+import time
 
-DEBUG_LEVEL = 2
+DEBUG_LEVEL = 1
 
 CITY_NAME = 1
 CITY_LATI = 2
@@ -63,14 +64,14 @@ def cities_graph_from_list(cities):
     num_cities = len(cities)
     num_cols = num_cities
     num_rows = num_cols
+
+    # initialize everything inside the array as -1
     cities_graph = [[-1 for x in xrange(num_cols)] for y in xrange(num_rows)]
 
-    count = 0
     for i in xrange(num_cols):
         for j in xrange(num_rows):
             if cities[i] != cities[j]:
                 cities_graph[i][j] = get_cities_distance(cities[i], cities[j])
-                count += 1
 
     return cities_graph
 
@@ -96,6 +97,82 @@ def calculate_round_trip(travel_plan, cities_graph):
 
     return total_distance
 
+def swap_random_city_with_neighbor(travel_plan):
+    last_city_index = len(travel_plan) -1
+    right = random.randint(0,1)
+
+    #randomly swapping with a neighbor
+    city_to_swap = random.randint(0, last_city_index)
+    if (city_to_swap == 0 and right == 0) or \
+       (city_to_swap == last_city_index and right == 1):
+        travel_plan[0],travel_plan[-1] = travel_plan[-1], travel_plan[0]
+    elif right == 1:
+        travel_plan[city_to_swap],travel_plan[city_to_swap+1] = \
+            travel_plan[city_to_swap+1], travel_plan[city_to_swap]
+    else:
+        travel_plan[city_to_swap],travel_plan[city_to_swap-1] = \
+            travel_plan[city_to_swap-1], travel_plan[city_to_swap]
+
+def swap_neighbors(travel_plan):
+    neighbors = list()
+    new_travel_plan = travel_plan[:]
+    last_city_index = len(travel_plan) -1
+    for city_to_swap in xrange(last_city_index):
+        if city_to_swap == last_city_index:
+            new_travel_plan[0],new_travel_plan[-1] = travel_plan[-1], travel_plan[0]
+        else:
+            new_travel_plan[city_to_swap],new_travel_plan[city_to_swap+1] = \
+                travel_plan[city_to_swap+1], travel_plan[city_to_swap]
+        neighbors.append(new_travel_plan)
+
+        new_travel_plan = travel_plan[:]
+    return neighbors
+
+def hill_climbing (travel_plan,cities_graph,minutes,get_successor,random_restart = False):
+    cur_travel_plan = travel_plan
+    t_end = time.time() + 60*minutes
+
+    cur_total_distance = calculate_round_trip(cur_travel_plan,cities_graph)
+    best_neighbor_distance = cur_total_distance
+
+    # keep looking for better neighbors while there is time and we are not at
+    # a local maxima
+    while (time.time() < t_end):
+        # get a subset of our neighbors as defined by get_succesor
+        neighbors = get_successor(cur_travel_plan)
+        print len(neighbors)
+
+        # evaluate the fitness of each neighbor
+        for neighbor_travel_plan in neighbors:
+            # get this neighbors fitness
+            new_total_distance = calculate_round_trip(neighbor_travel_plan,cities_graph)
+            # print neighbor_travel_plan
+
+            # if this neighbor is the best we've seen update our best_neighbor
+            if new_total_distance < best_neighbor_distance:
+                best_neighbor_travel_plan = neighbor_travel_plan
+                best_neighbor_distance = new_total_distance
+
+        # now that we've seen all our neighbors, check to make sure we have
+        # found one better than our current state
+        if cur_total_distance <= best_neighbor_distance:
+            # Unable to find a better neighbor!
+            # in the case we are doing random restarts we get a new chance!
+            if random_restart:
+                    cur_travel_plan = random.sample(xrange(0, num_cities), num_cities)
+                    cur_total_distance = calculate_round_trip(cur_travel_plan,cities_graph)
+                    best_neighbor_distance = cur_state_distance
+            else:
+                return cur_total_distance
+        else:
+            # we've found a better neighbor and must update
+            cur_total_distance = best_neighbor_distance
+            cur_travel_plan = best_neighbor_travel_plan
+
+    return cur_total_distance
+
+
+
 
 if __name__ == '__main__':
     cities_folder = './graphs/'
@@ -118,3 +195,9 @@ if __name__ == '__main__':
         travel_plan = random.sample(xrange(0, num_cities), num_cities)
         print travel_plan
         print calculate_round_trip(travel_plan, cities_graph)
+        best_total_distance = hill_climbing(travel_plan,
+                                                  cities_graph,
+                                                  1,
+                                                  swap_neighbors)
+        print travel_plan
+        print best_total_distance
