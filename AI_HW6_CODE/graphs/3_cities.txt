@@ -1,0 +1,4 @@
+#name,longitude,latitude
+Shanghai,1.0,0.0
+Karachi,2.0,0.0
+Sao Paulo,-1.0,-2.0
