@@ -4,21 +4,22 @@ import re
 import math
 import random
 import time
+import matplotlib.pyplot as plt
 
 DEBUG_LEVEL = 0
 PRINT_STATEMENTS = False
 
 CITY_NAME = 1
-CITY_LATI = 2
-CITY_LONG = 3
+CITY_LATI = 3
+CITY_LONG = 2
 
 
 
 class City:
-    def __init__(self, name, latitude, longitude):
+    def __init__(self, name, longitude, latitude):
         self.name = name
-        self.latitude = latitude
         self.longitude = longitude
+        self.latitude = latitude
 
 
 
@@ -42,8 +43,8 @@ def get_cities_from_file(cities_folder, cities_file):
             if match:
                 new_city = City(
                                 match.group(CITY_NAME),
-                          float(match.group(CITY_LATI)),
-                          float(match.group(CITY_LONG)))
+                          float(match.group(CITY_LONG)),
+                          float(match.group(CITY_LATI)))
                 # add our new city to the list of all the cities
                 cities_and_positions_list.append(new_city)
 
@@ -169,7 +170,7 @@ def swap_neighbors(travel_plan):
     return neighbors
 
 
-def random_restart_hill_climbing(travel_plan, cities_graph, runtime_in_seconds, get_successor):
+def random_restart_hill_climbing(travel_plan, cities_graph, end_time, get_successor):
     # get a random starting path
     cur_travel_plan = travel_plan
     best_travel_plan = cur_travel_plan[:]
@@ -180,10 +181,6 @@ def random_restart_hill_climbing(travel_plan, cities_graph, runtime_in_seconds, 
     if PRINT_STATEMENTS:
         print "best travel plan", best_travel_plan
         print "best total distance", best_total_distance
-
-    # calculate our end time
-    end_time = time.time() + runtime_in_seconds
-
 
     while (time.time() < end_time):
         # basic_hill_climbing will only return if we have timed out our if
@@ -306,6 +303,32 @@ def basic_hill_climbing(travel_plan, cities_graph, end_time, get_successor):
 
     return cur_travel_plan, cur_total_distance
 
+def plot_city_coordinates_lineup(cities,best_travel_plan,best_total_distance):
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1, axisbg="1.0")
+
+    for i in xrange(0,len(best_travel_plan)):
+        if i == 0:
+            ax.scatter(cities[best_travel_plan[i]].longitude,
+                       cities[best_travel_plan[i]].latitude,
+                       edgecolors='r')
+        else:
+            ax.scatter(cities[best_travel_plan[i]].longitude,
+                       cities[best_travel_plan[i]].latitude,
+                       edgecolors='r')
+            ax.plot([cities[best_travel_plan[i-1]].longitude,
+                     cities[best_travel_plan[i]].longitude],
+                     [cities[best_travel_plan[i-1]].latitude,
+                     cities[best_travel_plan[i]].latitude])
+    ax.plot([cities[best_travel_plan[-1]].longitude,
+             cities[best_travel_plan[0]].longitude],
+             [cities[best_travel_plan[-1]].latitude,
+             cities[best_travel_plan[0]].latitude])
+    plt.xlabel("Longitude")
+    plt.ylabel("Latitude")
+    plt.title("Total distance " + str(best_total_distance))
+    plt.show()
+
 
 if __name__ == '__main__':
     cities_folder = './graphs/'
@@ -343,7 +366,7 @@ if __name__ == '__main__':
                         + "\nUsing neightbor heuristic: ", neighbor_heuristic[1] \
                         + "\nRunning for: ", run_time, " seconds"
                     print "********************************************************************************\n"
-                    best_total_distance, best_travel_plan = \
+                    best_travel_plan, best_total_distance = \
                         hill_climb_method[0](starting_travel_plan,
                                              cities_graph,
                                              run_time + time.time(),
@@ -352,4 +375,4 @@ if __name__ == '__main__':
                     print best_total_distance
                     print best_travel_plan
                     print "\n\n\n\n"
-
+                    plot_city_coordinates_lineup(cities,best_travel_plan,best_total_distance)
