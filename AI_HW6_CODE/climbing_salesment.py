@@ -5,7 +5,8 @@ import math
 import random
 import time
 
-DEBUG_LEVEL = 1
+DEBUG_LEVEL = 0
+PRINT_STATEMENTS = False
 
 CITY_NAME = 1
 CITY_LATI = 2
@@ -97,26 +98,64 @@ def calculate_round_trip(travel_plan, cities_graph):
 
     return total_distance
 
-def swap_random_city_with_neighbor(travel_plan):
-    last_city_index = len(travel_plan) -1
-    right = random.randint(0,1)
+def generate_random_plans(travel_plan):
+    num_cities = len(travel_plan)
+    plans = list()
+    for plan in xrange(num_cities):
+        plans.append(random.sample(xrange(0, num_cities), num_cities))
 
-    #randomly swapping with a neighbor
-    city_to_swap = random.randint(0, last_city_index)
-    if (city_to_swap == 0 and right == 0) or \
-       (city_to_swap == last_city_index and right == 1):
-        travel_plan[0],travel_plan[-1] = travel_plan[-1], travel_plan[0]
-    elif right == 1:
-        travel_plan[city_to_swap],travel_plan[city_to_swap+1] = \
-            travel_plan[city_to_swap+1], travel_plan[city_to_swap]
-    else:
-        travel_plan[city_to_swap],travel_plan[city_to_swap-1] = \
-            travel_plan[city_to_swap-1], travel_plan[city_to_swap]
+    return plans
 
+
+# create our neighbors by swaping every city with a different random city
+def swap_random_cities(travel_plan):
+    neighbors = list()
+    new_travel_plan = travel_plan[:]
+    last_city_index = len(travel_plan) - 1
+
+    for city_to_swap in xrange(last_city_index):
+        random_city = random.randint(0,last_city_index)
+
+        new_travel_plan[city_to_swap],new_travel_plan[random_city] \
+            = travel_plan[random_city], travel_plan[city_to_swap]
+
+        neighbors.append(new_travel_plan)
+
+        # reset our new_travel plan as to not continue to modify the newly
+        # created neighbor
+        new_travel_plan = travel_plan[:]
+
+    return neighbors
+
+
+# similar two above but we choose two random cities every time
+def swap_two_random_cities(travel_plan):
+    neighbors = list()
+    new_travel_plan = travel_plan[:]
+    last_city_index = len(travel_plan) - 1
+
+    for city_to_swap in xrange(last_city_index):
+        random_city_1 = random.randint(0,last_city_index)
+        random_city_2 = random.randint(0,last_city_index)
+
+        new_travel_plan[random_city_2],new_travel_plan[random_city_1] \
+            = travel_plan[random_city_1], travel_plan[random_city_2]
+
+        neighbors.append(new_travel_plan)
+
+        # reset our new_travel plan as to not continue to modify the newly
+        # created neighbor
+        new_travel_plan = travel_plan[:]
+
+    return neighbors
+
+
+# swap every city with the city to it's "right"
 def swap_neighbors(travel_plan):
     neighbors = list()
     new_travel_plan = travel_plan[:]
-    last_city_index = len(travel_plan) -1
+    last_city_index = len(travel_plan) - 1
+
     for city_to_swap in xrange(last_city_index):
         if city_to_swap == last_city_index:
             new_travel_plan[0],new_travel_plan[-1] = travel_plan[-1], travel_plan[0]
@@ -126,27 +165,67 @@ def swap_neighbors(travel_plan):
         neighbors.append(new_travel_plan)
 
         new_travel_plan = travel_plan[:]
+
     return neighbors
 
-def hill_climbing (travel_plan,cities_graph,minutes,get_successor,random_restart = False):
-    cur_travel_plan = travel_plan
-    t_end = time.time() + 60*minutes
 
+def random_restart_hill_climbing(travel_plan, cities_graph, runtime_in_seconds, get_successor):
+    # get a random starting path
+    cur_travel_plan = travel_plan
+    best_travel_plan = cur_travel_plan[:]
+
+    cur_total_distance = calculate_round_trip(cur_travel_plan, cities_graph)
+    best_total_distance = cur_total_distance
+
+    if PRINT_STATEMENTS:
+        print "best travel plan", best_travel_plan
+        print "best total distance", best_total_distance
+
+    # calculate our end time
+    end_time = time.time() + runtime_in_seconds
+
+
+    while (time.time() < end_time):
+        # basic_hill_climbing will only return if we have timed out our if
+        # we have reached a local minima/maxima
+        new_total_distance = basic_hill_climbing(cur_travel_plan,
+                                                       cities_graph,
+                                                       end_time,
+                                                       get_successor)
+        if PRINT_STATEMENTS:
+            print "new total distance", new_total_distance
+
+        # update our current solution if we have found a better one
+        if new_total_distance < best_total_distance:
+            cur_total_distance = new_total_distance
+            best_travel_plan = cur_travel_plan[:]
+            best_total_distance = new_total_distance
+            if PRINT_STATEMENTS:
+                print "best travel plan", best_travel_plan
+                print "best total distance", best_total_distance
+
+        cur_travel_plan = random.sample(xrange(0, num_cities), num_cities)
+        cur_total_distance = calculate_round_trip(cur_travel_plan, cities_graph)
+
+    return best_travel_plan, best_total_distance
+
+
+def contingency_hill_climbing(travel_plan, cities_graph, end_time, get_successor):
+    cur_travel_plan = travel_plan
     cur_total_distance = calculate_round_trip(cur_travel_plan,cities_graph)
     best_neighbor_distance = cur_total_distance
+    contingency = False
 
     # keep looking for better neighbors while there is time and we are not at
     # a local maxima
-    while (time.time() < t_end):
+    while (time.time() < end_time):
         # get a subset of our neighbors as defined by get_succesor
         neighbors = get_successor(cur_travel_plan)
-        print len(neighbors)
 
         # evaluate the fitness of each neighbor
         for neighbor_travel_plan in neighbors:
             # get this neighbors fitness
-            new_total_distance = calculate_round_trip(neighbor_travel_plan,cities_graph)
-            # print neighbor_travel_plan
+            new_total_distance = calculate_round_trip(neighbor_travel_plan, cities_graph)
 
             # if this neighbor is the best we've seen update our best_neighbor
             if new_total_distance < best_neighbor_distance:
@@ -156,22 +235,76 @@ def hill_climbing (travel_plan,cities_graph,minutes,get_successor,random_restart
         # now that we've seen all our neighbors, check to make sure we have
         # found one better than our current state
         if cur_total_distance <= best_neighbor_distance:
-            # Unable to find a better neighbor!
-            # in the case we are doing random restarts we get a new chance!
-            if random_restart:
-                    cur_travel_plan = random.sample(xrange(0, num_cities), num_cities)
-                    cur_total_distance = calculate_round_trip(cur_travel_plan,cities_graph)
-                    best_neighbor_distance = cur_state_distance
-            else:
+            contingency = True
+            if PRINT_STATEMENTS:
+                print "local maxima/minima"
+            # try another (contingency) neighbor method to make sure we are stuck
+            new_total_distance = \
+                basic_hill_climbing(neighbor_travel_plan,
+                                    cities_graph,
+                                    end_time,
+                                    swap_neighbors)
+
+            # if this contingency stil isn't good enough, give up
+            if new_total_distance >= best_neighbor_distance:
+                print "\n\n\ncontingency failure\n\n\n"
                 return cur_total_distance
+            contingency = False
+            print "\n\n\ncontingency success\n\n\n"
+            best_neighbor_travel_plan = neighbor_travel_plan
+            best_neighbor_distance = new_total_distance
+            cur_total_distance = best_neighbor_distance
+            cur_travel_plan = best_neighbor_travel_plan
+            if PRINT_STATEMENTS:
+                print "new distance", cur_total_distance
+                print "new plan", cur_travel_plan
+        else:
+            cur_total_distance = best_neighbor_distance
+            cur_travel_plan = best_neighbor_travel_plan
+            if PRINT_STATEMENTS:
+                print "new distance", cur_total_distance
+                print "new plan", cur_travel_plan
+
+    return cur_travel_plan, cur_total_distance
+
+
+def basic_hill_climbing(travel_plan, cities_graph, end_time, get_successor):
+    # get a random starting path
+    cur_travel_plan = travel_plan
+    cur_total_distance = calculate_round_trip(cur_travel_plan, cities_graph)
+    best_neighbor_distance = cur_total_distance
+
+    # keep looking for better neighbors while there is time and we are not at
+    # a local maxima
+    while (time.time() < end_time):
+        # get a subset of our neighbors as defined by get_succesor
+        neighbors = get_successor(cur_travel_plan)
+
+        # evaluate the fitness of each neighbor
+        for neighbor_travel_plan in neighbors:
+            # get this neighbors fitness
+            new_total_distance = calculate_round_trip(neighbor_travel_plan,cities_graph)
+
+            # if this neighbor is the best we've seen update our best_neighbor
+            if new_total_distance < best_neighbor_distance:
+                best_neighbor_travel_plan = neighbor_travel_plan
+                best_neighbor_distance = new_total_distance
+
+        # now that we've seen all our neighbors, check to make sure we have
+        # found one better than our current state
+        if cur_total_distance <= best_neighbor_distance:
+            if PRINT_STATEMENTS:
+                print "local maxima/minima"
+            return cur_travel_plan, cur_total_distance
         else:
             # we've found a better neighbor and must update
             cur_total_distance = best_neighbor_distance
             cur_travel_plan = best_neighbor_travel_plan
+            if PRINT_STATEMENTS:
+                print "new distance", cur_total_distance
+                print "new plan", cur_travel_plan
 
-    return cur_total_distance
-
-
+    return cur_travel_plan, cur_total_distance
 
 
 if __name__ == '__main__':
@@ -186,18 +319,37 @@ if __name__ == '__main__':
     else:
         cities_files = ['cities_full.txt']
 
+    hill_climb_methods = [(basic_hill_climbing, "basic_hill_climbing (stops at local minima/maxima)"),
+                          (random_restart_hill_climbing, "random_restart_hill_climbing (when a local minima/maxima is reached, try a new starting point"),
+                          (contingency_hill_climbing, "contingency_hill_climbing (when a local minima/maxima is reached, try another heuristic for a bit. If that doesn't work, try a new starting point")]
+
+    neighbor_heuristics = [(swap_neighbors, "swap_neighbors (swap a city with it's neighbor to the right)"),
+                           (swap_random_cities, "swap_random_cities (for each city, swap it with a random city)"),
+                           (swap_two_random_cities, "swap_two_random_cities (swap one random city with another)")]
+    # in seconds
+    run_times = [60, 5*60, 20*60]
+
     for cities_file in cities_files:
         cities = get_cities_from_file(cities_folder, cities_file)
         num_cities = len(cities)
         cities_graph = cities_graph_from_list(cities)
+        starting_travel_plan = random.sample(xrange(0, num_cities), num_cities)
 
-        # get a random travel_plan
-        travel_plan = random.sample(xrange(0, num_cities), num_cities)
-        print travel_plan
-        print calculate_round_trip(travel_plan, cities_graph)
-        best_total_distance = hill_climbing(travel_plan,
-                                                  cities_graph,
-                                                  1,
-                                                  swap_neighbors)
-        print travel_plan
-        print best_total_distance
+        for hill_climb_method in hill_climb_methods:
+            for neighbor_heuristic in neighbor_heuristics:
+                for run_time in run_times:
+                    print "\n********************************************************************************"
+                    print "Using climbing method: ", hill_climb_method[1] \
+                        + "\nUsing neightbor heuristic: ", neighbor_heuristic[1] \
+                        + "\nRunning for: ", run_time, " seconds"
+                    print "********************************************************************************\n"
+                    best_total_distance, best_travel_plan = \
+                        hill_climb_method[0](starting_travel_plan,
+                                             cities_graph,
+                                             run_time + time.time(),
+                                             neighbor_heuristic[0])
+                    # graph here?
+                    print best_total_distance
+                    print best_travel_plan
+                    print "\n\n\n\n"
+
