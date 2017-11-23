@@ -7,11 +7,11 @@ import time
 import matplotlib.pyplot as plt
 
 DEBUG_LEVEL = 0
-PRINT_STATEMENTS = False
+PRINT_STATEMENTS = True
 
 CITY_NAME = 1
-CITY_LATI = 3
 CITY_LONG = 2
+CITY_LATI = 3
 
 
 
@@ -185,21 +185,61 @@ def random_restart_hill_climbing(travel_plan, cities_graph, end_time, get_succes
     while (time.time() < end_time):
         # basic_hill_climbing will only return if we have timed out our if
         # we have reached a local minima/maxima
-        new_total_distance = basic_hill_climbing(cur_travel_plan,
-                                                       cities_graph,
-                                                       end_time,
-                                                       get_successor)
+        new_travel_plan, new_total_distance = basic_hill_climbing(cur_travel_plan,
+                                                                 cities_graph,
+                                                                 end_time,
+                                                                 get_successor)
         if PRINT_STATEMENTS:
             print "new total distance", new_total_distance
 
         # update our current solution if we have found a better one
         if new_total_distance < best_total_distance:
             cur_total_distance = new_total_distance
-            best_travel_plan = cur_travel_plan[:]
+            best_travel_plan = new_travel_plan[:]
             best_total_distance = new_total_distance
             if PRINT_STATEMENTS:
                 print "best travel plan", best_travel_plan
                 print "best total distance", best_total_distance
+                print time.time(), end_time
+
+        cur_travel_plan = random.sample(xrange(0, num_cities), num_cities)
+        cur_total_distance = calculate_round_trip(cur_travel_plan, cities_graph)
+
+    return best_travel_plan, best_total_distance
+
+
+def contingency_random_restart_hill_climbing(travel_plan, cities_graph, end_time, get_successor):
+    # get a random starting path
+    cur_travel_plan = travel_plan
+    best_travel_plan = cur_travel_plan[:]
+
+    cur_total_distance = calculate_round_trip(cur_travel_plan, cities_graph)
+    best_total_distance = cur_total_distance
+
+    if PRINT_STATEMENTS:
+        print "best travel plan", best_travel_plan
+        print "best total distance", best_total_distance
+
+    while (time.time() < end_time):
+        # basic_hill_climbing will only return if we have timed out our if
+        # we have reached a local minima/maxima
+        new_travel_plan, new_total_distance = \
+            contingency_hill_climbing(cur_travel_plan,
+                                      cities_graph,
+                                      end_time,
+                                      get_successor)
+        if PRINT_STATEMENTS:
+            print "new total distance", new_total_distance
+
+        # update our current solution if we have found a better one
+        if new_total_distance < best_total_distance:
+            cur_total_distance = new_total_distance
+            best_travel_plan = new_travel_plan[:]
+            best_total_distance = new_total_distance
+            if PRINT_STATEMENTS:
+                print "best travel plan", best_travel_plan
+                print "best total distance", best_total_distance
+                print time.time(), end_time
 
         cur_travel_plan = random.sample(xrange(0, num_cities), num_cities)
         cur_total_distance = calculate_round_trip(cur_travel_plan, cities_graph)
@@ -208,7 +248,7 @@ def random_restart_hill_climbing(travel_plan, cities_graph, end_time, get_succes
 
 
 def contingency_hill_climbing(travel_plan, cities_graph, end_time, get_successor):
-    cur_travel_plan = travel_plan
+    cur_travel_plan = travel_plan[:]
     cur_total_distance = calculate_round_trip(cur_travel_plan,cities_graph)
     best_neighbor_distance = cur_total_distance
     contingency = False
@@ -236,7 +276,7 @@ def contingency_hill_climbing(travel_plan, cities_graph, end_time, get_successor
             if PRINT_STATEMENTS:
                 print "local maxima/minima"
             # try another (contingency) neighbor method to make sure we are stuck
-            new_total_distance = \
+            new_travel_plan, new_total_distance = \
                 basic_hill_climbing(neighbor_travel_plan,
                                     cities_graph,
                                     end_time,
@@ -245,10 +285,11 @@ def contingency_hill_climbing(travel_plan, cities_graph, end_time, get_successor
             # if this contingency stil isn't good enough, give up
             if new_total_distance >= best_neighbor_distance:
                 print "\n\n\ncontingency failure\n\n\n"
-                return cur_total_distance
+                return cur_travel_plan, cur_total_distance
+
             contingency = False
             print "\n\n\ncontingency success\n\n\n"
-            best_neighbor_travel_plan = neighbor_travel_plan
+            best_neighbor_travel_plan = new_travel_plan
             best_neighbor_distance = new_total_distance
             cur_total_distance = best_neighbor_distance
             cur_travel_plan = best_neighbor_travel_plan
@@ -262,12 +303,13 @@ def contingency_hill_climbing(travel_plan, cities_graph, end_time, get_successor
                 print "new distance", cur_total_distance
                 print "new plan", cur_travel_plan
 
+    print cur_travel_plan, cur_total_distance
     return cur_travel_plan, cur_total_distance
 
 
 def basic_hill_climbing(travel_plan, cities_graph, end_time, get_successor):
     # get a random starting path
-    cur_travel_plan = travel_plan
+    cur_travel_plan = travel_plan[:]
     cur_total_distance = calculate_round_trip(cur_travel_plan, cities_graph)
     best_neighbor_distance = cur_total_distance
 
@@ -342,15 +384,16 @@ if __name__ == '__main__':
     else:
         cities_files = ['cities_full.txt']
 
-    hill_climb_methods = [(basic_hill_climbing, "basic_hill_climbing (stops at local minima/maxima)"),
-                          (random_restart_hill_climbing, "random_restart_hill_climbing (when a local minima/maxima is reached, try a new starting point"),
-                          (contingency_hill_climbing, "contingency_hill_climbing (when a local minima/maxima is reached, try another heuristic for a bit. If that doesn't work, try a new starting point")]
+    hill_climb_methods = [#(basic_hill_climbing, "basic_hill_climbing (stops at local minima/maxima)"),
+                          #(random_restart_hill_climbing, "random_restart_hill_climbing (when a local minima/maxima is reached, try a new starting point"),
+                          (contingency_random_restart_hill_climbing, "contingency_random_restart_hill_climbing (when a local minima/maxima is reached, try another heuristic for a bit. If that doesn't work, try a new starting point")]
 
-    neighbor_heuristics = [(swap_neighbors, "swap_neighbors (swap a city with it's neighbor to the right)"),
-                           (swap_random_cities, "swap_random_cities (for each city, swap it with a random city)"),
+    neighbor_heuristics = [#(swap_neighbors, "swap_neighbors (swap a city with it's neighbor to the right)"),
+                           #(swap_random_cities, "swap_random_cities (for each city, swap it with a random city)"),
                            (swap_two_random_cities, "swap_two_random_cities (swap one random city with another)")]
     # in seconds
-    run_times = [60, 5*60, 20*60]
+    #run_times = [60], 5*60, 20*60]
+    run_times = [120]
 
     for cities_file in cities_files:
         cities = get_cities_from_file(cities_folder, cities_file)
@@ -366,10 +409,11 @@ if __name__ == '__main__':
                         + "\nUsing neightbor heuristic: ", neighbor_heuristic[1] \
                         + "\nRunning for: ", run_time, " seconds"
                     print "********************************************************************************\n"
+                    total_run_time = run_time + time.time()
                     best_travel_plan, best_total_distance = \
                         hill_climb_method[0](starting_travel_plan,
                                              cities_graph,
-                                             run_time + time.time(),
+                                             total_run_time,
                                              neighbor_heuristic[0])
                     # graph here?
                     print best_total_distance
