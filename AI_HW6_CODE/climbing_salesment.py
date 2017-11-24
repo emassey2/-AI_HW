@@ -384,16 +384,15 @@ if __name__ == '__main__':
     else:
         cities_files = ['cities_full.txt']
 
-    hill_climb_methods = [#(basic_hill_climbing, "basic_hill_climbing (stops at local minima/maxima)"),
-                          #(random_restart_hill_climbing, "random_restart_hill_climbing (when a local minima/maxima is reached, try a new starting point"),
+    hill_climb_methods = [(basic_hill_climbing, "basic_hill_climbing (stops at local minima/maxima)"),
+                          (random_restart_hill_climbing, "random_restart_hill_climbing (when a local minima/maxima is reached, try a new starting point"),
                           (contingency_random_restart_hill_climbing, "contingency_random_restart_hill_climbing (when a local minima/maxima is reached, try another heuristic for a bit. If that doesn't work, try a new starting point")]
 
-    neighbor_heuristics = [#(swap_neighbors, "swap_neighbors (swap a city with it's neighbor to the right)"),
-                           #(swap_random_cities, "swap_random_cities (for each city, swap it with a random city)"),
+    neighbor_heuristics = [(swap_neighbors, "swap_neighbors (swap a city with it's neighbor to the right)"),
+                           (swap_random_cities, "swap_random_cities (for each city, swap it with a random city)"),
                            (swap_two_random_cities, "swap_two_random_cities (swap one random city with another)")]
     # in seconds
-    #run_times = [60], 5*60, 20*60]
-    run_times = [120]
+    run_times = [60, 5*60, 20*60]
 
     for cities_file in cities_files:
         cities = get_cities_from_file(cities_folder, cities_file)
@@ -415,7 +414,6 @@ if __name__ == '__main__':
                                              cities_graph,
                                              total_run_time,
                                              neighbor_heuristic[0])
-                    # graph here?
                     print best_total_distance
                     print best_travel_plan
                     print "\n\n\n\n"
