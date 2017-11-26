@@ -7,7 +7,7 @@ import time
 import matplotlib.pyplot as plt
 
 DEBUG_LEVEL = 0
-PRINT_STATEMENTS = True
+PRINT_STATEMENTS = False
 
 CITY_NAME = 1
 CITY_LONG = 2
@@ -202,6 +202,7 @@ def random_restart_hill_climbing(travel_plan, cities_graph, end_time, get_succes
                 print "best total distance", best_total_distance
                 print time.time(), end_time
 
+        print 'random restart'
         cur_travel_plan = random.sample(xrange(0, num_cities), num_cities)
         cur_total_distance = calculate_round_trip(cur_travel_plan, cities_graph)
 
@@ -345,7 +346,7 @@ def basic_hill_climbing(travel_plan, cities_graph, end_time, get_successor):
 
     return cur_travel_plan, cur_total_distance
 
-def plot_city_coordinates_lineup(cities,best_travel_plan,best_total_distance):
+def plot_city_coordinates_lineup(cities,best_travel_plan,best_total_distance, search_info):
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1, axisbg="1.0")
 
@@ -368,7 +369,7 @@ def plot_city_coordinates_lineup(cities,best_travel_plan,best_total_distance):
              cities[best_travel_plan[0]].latitude])
     plt.xlabel("Longitude")
     plt.ylabel("Latitude")
-    plt.title("Total distance " + str(best_total_distance))
+    plt.title("Total distance " + str(best_total_distance) + "\n" + search_info)
     plt.show()
 
 
@@ -417,4 +418,5 @@ if __name__ == '__main__':
                     print best_total_distance
                     print best_travel_plan
                     print "\n\n\n\n"
-                    plot_city_coordinates_lineup(cities,best_travel_plan,best_total_distance)
+                    search_info = "Method: " + hill_climb_method[1] + "\nNeighbors: " + neighbor_heuristic[1] + "\nTime: " + str(run_time)
+                    plot_city_coordinates_lineup(cities,best_travel_plan,best_total_distance, search_info)
