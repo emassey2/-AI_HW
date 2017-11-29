@@ -396,7 +396,8 @@ def solve_sudoku(cur_state, successor_function):
     zero_locations = cur_state.find_zeros()
 
     for zero_location in zero_locations:
-        pass #for
+        for possible_value in cur_state.successor_function():
+
 
 
 def get_puzzles_from_file(puzzles_folder, puzzles_file):
