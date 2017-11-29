@@ -5,7 +5,7 @@ from itertools import islice
 from sets import Set
 
 
-DEBUG_LEVEL = 2
+DEBUG_LEVEL = 1
 PRINT_STATEMENTS = True
 
 
@@ -89,6 +89,86 @@ class Sudoku:
         # if our row doesn't contain all the numbers [1,9] return false
         return len(row_set.difference(self.SUDOKU_SET)) == 0
 
+    def get_row(self,row_number):
+        row = list()
+        #Returns a set of all the current elements in a row
+        if PRINT_STATEMENTS and DEBUG_LEVEL >= 3:
+            print "Checking row..."
+
+        # find every number in our row
+        for col in xrange(0, self.SUDOKU_SIDE_LENGTH):
+            row.append(self.state[row_number][col])
+
+        if PRINT_STATEMENTS and DEBUG_LEVEL >= 3:
+            print row
+
+        # convert that row to a set for easy comparison
+        row_set = set(row)
+        return row_set
+
+    def get_colum(self,column_number):
+        #Returns a set of all the current elements in a column
+        column = list()
+
+        if PRINT_STATEMENTS and DEBUG_LEVEL >= 3:
+            print "Checking col..."
+
+        # find every number in our column
+        for row in xrange(0, self.SUDOKU_SIDE_LENGTH):
+            column.append(self.state[row][column_number])
+
+        if PRINT_STATEMENTS and DEBUG_LEVEL >= 3:
+            print column
+
+        # convert that column to a set for easy comparison
+        column_set = set(column)
+
+        # if our column doesn't contain all the numbers [1,9] return false
+        return column_set
+
+    def get_sub_square(self,row,col):
+        #Returns a set of all the current alements in a sub square
+        sub_square = list()
+
+        if PRINT_STATEMENTS and DEBUG_LEVEL >= 3:
+            print "Checking sub square..."
+
+        # find every number sub square
+        col_start = col*self.SUDOKU_SUB_SIZE
+        row_start = row*self.SUDOKU_SUB_SIZE
+        for col in xrange(col_start, col_start + self.SUDOKU_SUB_SIZE):
+            for row in xrange(row_start, row_start + self.SUDOKU_SUB_SIZE):
+                sub_square.append(self.state[row][col])
+
+        if PRINT_STATEMENTS and DEBUG_LEVEL >= 3:
+            print sub_square
+
+        # convert that row to a set for easy comparison
+        sub_square_set = set(sub_square)
+
+        # if our row doesn't contain all the numbers [1,9] return false
+        return sub_square_set
+
+    def get_super_set(self,row,col):
+        #Initialize the output_set with all the possible numbers
+        output_set = self.SUDOKU_SET
+        #Get the corresponding row_set
+        row_set = self.get_row(row)
+        #Get the corresponding col_set
+        col_set = self.get_colum(col)
+        #Converting the corresponding row and column to a subset of the sudoku
+        sub_square_set = \
+            self.get_sub_square(row/self.SUDOKU_SUB_SIZE,col/self.SUDOKU_SUB_SIZE)
+        #Create a super set of row, column and sub_square sets
+        super_set = row_set
+        super_set.update(col_set)
+        super_set.update(sub_square_set)
+        #Substract the numbers that are in the super_set to get the possible
+        #numbers
+        output_set.difference_update(super_set)
+        if PRINT_STATEMENTS and DEBUG_LEVEL >= 3:
+            print output_set
+        return output_set
 
     def check_sub_square(self, row, col):
         sub_square = list()
@@ -115,6 +195,7 @@ class Sudoku:
 
     def check_sudoku(self):
         valid = True
+        self.get_super_set(0,4)
 
         # check all our sub squares in range [0, 2]
         for i in xrange(0, self.SUDOKU_SUB_SIZE):
