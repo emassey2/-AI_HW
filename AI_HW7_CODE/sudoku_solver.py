@@ -2,12 +2,14 @@
 
 
 from itertools import islice
+import copy
+import sys
 from sets import Set
 import time
 
 
-DEBUG_LEVEL = 2
-PRINT_STATEMENTS = True
+DEBUG_LEVEL = 1
+PRINT_STATEMENTS = False
 
 
 
@@ -34,7 +36,7 @@ class Sudoku:
 
     @classmethod
     def sudoku_array_to_str(self, sudoku_array):
-        state_str = ""
+        state_str = "\n"
         horizontal_bar = '\n------|-------|------\n'
         for i in xrange(0, self.SUDOKU_SUB_SIZE):
             for j in xrange(0, self.SUDOKU_SUB_SIZE):
@@ -118,14 +120,14 @@ class Sudoku:
 
     def get_super_set(self, row, col):
         #Get the corresponding row_set
-        row_set = self.get_row(row)
+        row_set = self.get_row_set(row)
 
         #Get the corresponding col_set
-        col_set = self.get_colum(col)
+        col_set = self.get_column_set(col)
 
         #Converting the corresponding row and column to a subset of the sudoku
         sub_square_set = \
-            self.get_sub_square(row/self.SUDOKU_SUB_SIZE,col/self.SUDOKU_SUB_SIZE)
+            self.get_sub_square_set(row/self.SUDOKU_SUB_SIZE,col/self.SUDOKU_SUB_SIZE)
 
         #Create a super set of row, column, and sub_square sets
         super_set = row_set
@@ -133,12 +135,12 @@ class Sudoku:
         super_set.update(sub_square_set)
 
         if PRINT_STATEMENTS and DEBUG_LEVEL >= 3:
-            print output_set
+            print super_set
 
-        return output_set
+        return super_set
 
 
-    # returns TRUE in the presence of blanks
+    # may return TRUE in the presence of blanks
     def valid_column(self, column_number):
         column = dict()
         valid = True
@@ -163,7 +165,7 @@ class Sudoku:
         return valid
 
 
-    # returns TRUE in the presence of blanks
+    # may return TRUE in the presence of blanks
     def valid_row(self, row_number):
         row = dict()
         valid = True
@@ -188,7 +190,7 @@ class Sudoku:
         return valid
 
 
-    # returns TRUE in the presence of blanks
+    # may return TRUE in the presence of blanks
     def valid_sub_square(self, row, col):
         sub_square = dict()
         valid = True
@@ -216,14 +218,14 @@ class Sudoku:
         return valid
 
 
-    # returns TRUE in the presence of blanks
+    # may return TRUE in the presence of blanks
     def valid_sudoku(self):
         valid = True
 
         # check all our sub squares in range [0, 2]
         for i in xrange(0, self.SUDOKU_SUB_SIZE):
             for j in xrange(0, self.SUDOKU_SUB_SIZE):
-                valid = self.check_sub_square(i, j)
+                valid = self.valid_sub_square(i, j)
 
                 if not valid:
                     break;
@@ -234,7 +236,7 @@ class Sudoku:
         # check all of our rows and columns
         if valid:
             for i in xrange(0, self.SUDOKU_SIDE_LENGTH):
-                valid = self.check_column(i) and self.check_row(i)
+                valid = self.valid_column(i) and self.valid_row(i)
 
                 if not valid:
                     break;
@@ -315,7 +317,7 @@ class Sudoku:
         # check all our sub squares in range [0, 2]
         for i in xrange(0, self.SUDOKU_SUB_SIZE):
             for j in xrange(0, self.SUDOKU_SUB_SIZE):
-                valid = self.check_sub_square(i, j)
+                valid = self.solved_sub_square(i, j)
 
                 if not valid:
                     break;
@@ -326,7 +328,7 @@ class Sudoku:
         # check all of our rows and columns
         if valid:
             for i in xrange(0, self.SUDOKU_SIDE_LENGTH):
-                valid = self.check_column(i) and self.check_row(i)
+                valid = self.solved_column(i) and self.solved_row(i)
 
                 if not valid:
                     break;
@@ -342,6 +344,8 @@ class Sudoku:
             for j in xrange(0, self.SUDOKU_SIDE_LENGTH):
                 if self.state[i][j] == '0':
                     zero_locations.append((i,j))
+
+        return zero_locations
 
 
     def set_cur_state(self, state):
@@ -365,39 +369,68 @@ class Sudoku:
         return delta
 
 
-    def get_all_successors(self):
-        return list(self.SUDOKU_SET)
+    def get_all_successors(self, cur_state, zero_location):
+        possible_states = list()
+
+        for new_value in self.SUDOKU_SET:
+            new_state = copy.deepcopy(cur_state.state)
+            new_state[zero_location[0]][zero_location[1]] = new_value
+            possible_states.append(new_state)
+
+        return possible_states
 
 
-    def get_valid_successors(self):
+    def get_valid_successors(self, cur_state, zero_location):
         #Initialize the output_set with all the possible numbers
         output_set = self.SUDOKU_SET
 
-        super_set = self.get_super_set()
+        super_set = self.get_super_set(zero_location[0], zero_location[1])
 
         # find the difference between all possible numbers and our superset of
         # currently present numbers
         output_set.difference_update(super_set)
 
-        return list(output_set)
+        possible_states = list()
 
+        for new_value in output_set:
+            new_state = copy.deepcopy(cur_state.state)
+            new_state[zero_location[0]][zero_location[1]] = new_value
+            possible_states.append(new_state)
+
+        return possible_states
 
 
 def solve_sudoku(cur_state, successor_function):
+    if PRINT_STATEMENTS:
+        print "Current state: ", cur_state.get_state()
     # make sure this is even a vaild solution
-    if cur_state.valid_state():
-        return False
+    if not cur_state.valid_sudoku():
+        return False, cur_state
 
     # if the puzzle is solved we are done
-    if cur_state.check_sudoku():
-        return True
+    if cur_state.solved_sudoku():
+        return True, cur_state
 
     # if it isn't solved yet, find the zeros and try different solutions
     zero_locations = cur_state.find_zeros()
 
-    for zero_location in zero_locations:
-        for possible_value in cur_state.successor_function():
+    if PRINT_STATEMENTS:
+        print "zLoc", len(zero_locations)
 
+    for zero_location in zero_locations:
+        possible_states = successor_function(cur_state, zero_location)
+
+        if PRINT_STATEMENTS:
+            print "pSta", len(possible_states)
+
+        for possible_state in possible_states:
+            new_state = Sudoku(possible_state)
+            result, final_state = solve_sudoku(new_state, successor_function)
+
+            if result:
+                return True, final_state
+
+    return False, cur_state
 
 
 def get_puzzles_from_file(puzzles_folder, puzzles_file):
@@ -423,15 +456,19 @@ def get_puzzles_from_file(puzzles_folder, puzzles_file):
 
 
 if __name__ == '__main__':
+    sys.setrecursionlimit(10000)
     puzzles_folder = './'
     if DEBUG_LEVEL == 2:
         puzzles_files = ['solved_sudoku.txt']
     elif DEBUG_LEVEL == 1:
-        puzzles_files = ['1sudoku.txt']
+        puzzles_files = ['1step.txt']
     else:
         puzzles_files = ['50sudoku.txt']
 
     for puzzles_file in puzzles_files:
         sudoku_puzzles = get_puzzles_from_file(puzzles_folder, puzzles_file)
-        sudoku_puzzles[0].print_state()
-        print sudoku_puzzles[0].check_sudoku()
+        for sudoku_puzzle in sudoku_puzzles:
+            print sudoku_puzzle.get_state()
+            success, puzzle_result = \
+                solve_sudoku(sudoku_puzzle, sudoku_puzzle.get_all_successors)
+            print str(success) + '\n' + puzzle_result.get_state()
