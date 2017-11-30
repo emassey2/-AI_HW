@@ -9,7 +9,7 @@ import time
 
 
 DEBUG_LEVEL = 1
-PRINT_STATEMENTS = False
+PRINT_STATEMENTS = True
 
 
 
@@ -389,10 +389,13 @@ class Sudoku:
         # find the difference between all possible numbers and our superset of
         # currently present numbers
         output_set.difference_update(super_set)
-
+        if PRINT_STATEMENTS:
+            print "Possible set: ", output_set
         possible_states = list()
 
         for new_value in output_set:
+            if PRINT_STATEMENTS:
+                print "Possible values: ", new_value
             new_state = copy.deepcopy(cur_state.state)
             new_state[zero_location[0]][zero_location[1]] = new_value
             possible_states.append(new_state)
@@ -403,6 +406,8 @@ class Sudoku:
 def solve_sudoku(cur_state, successor_function):
     if PRINT_STATEMENTS:
         print "Current state: ", cur_state.get_state()
+        print "Valid state: ", cur_state.valid_sudoku()
+        print "Solved sudoku: ", cur_state.solved_sudoku()
     # make sure this is even a vaild solution
     if not cur_state.valid_sudoku():
         return False, cur_state
@@ -427,6 +432,8 @@ def solve_sudoku(cur_state, successor_function):
             new_state = Sudoku(possible_state)
             result, final_state = solve_sudoku(new_state, successor_function)
 
+            if PRINT_STATEMENTS:
+                print "Result condition: ", result
             if result:
                 return True, final_state
 
@@ -461,14 +468,17 @@ if __name__ == '__main__':
     if DEBUG_LEVEL == 2:
         puzzles_files = ['solved_sudoku.txt']
     elif DEBUG_LEVEL == 1:
-        puzzles_files = ['1step.txt']
+        # puzzles_files = ['1step.txt']
+        puzzles_files = ['1sudoku.txt']
     else:
         puzzles_files = ['50sudoku.txt']
 
     for puzzles_file in puzzles_files:
         sudoku_puzzles = get_puzzles_from_file(puzzles_folder, puzzles_file)
         for sudoku_puzzle in sudoku_puzzles:
-            print sudoku_puzzle.get_state()
+            print "Initial state: ",sudoku_puzzle.get_state()
             success, puzzle_result = \
-                solve_sudoku(sudoku_puzzle, sudoku_puzzle.get_all_successors)
-            print str(success) + '\n' + puzzle_result.get_state()
+                solve_sudoku(sudoku_puzzle, sudoku_puzzle.get_valid_successors)
+            # success, puzzle_result = \
+            #     solve_sudoku(sudoku_puzzle, sudoku_puzzle.get_all_successors)
+            print "Solved Puzzle: " + str(success) + '\n' + puzzle_result.get_state()
