@@ -8,8 +8,8 @@ from sets import Set
 import time
 
 
-DEBUG_LEVEL = 1
-PRINT_STATEMENTS = True
+DEBUG_LEVEL = 2
+PRINT_STATEMENTS = False
 
 
 
@@ -381,19 +381,17 @@ class Sudoku:
 
 
     def get_valid_successors(self, cur_state, zero_location):
-        #Initialize the output_set with all the possible numbers
-        output_set = self.SUDOKU_SET
-
-        super_set = self.get_super_set(zero_location[0], zero_location[1])
+        # get all the numbers in the row, col, and sub_square of our current 0 position
+        valid_set = self.get_super_set(zero_location[0], zero_location[1])
 
         # find the difference between all possible numbers and our superset of
         # currently present numbers
-        output_set.difference_update(super_set)
+        valid_set = self.SUDOKU_SET.difference(valid_set)
         if PRINT_STATEMENTS:
-            print "Possible set: ", output_set
+            print "Possible set: ", valid_set
         possible_states = list()
 
-        for new_value in output_set:
+        for new_value in valid_set:
             if PRINT_STATEMENTS:
                 print "Possible values: ", new_value
             new_state = copy.deepcopy(cur_state.state)
@@ -468,7 +466,7 @@ if __name__ == '__main__':
     if DEBUG_LEVEL == 2:
         puzzles_files = ['solved_sudoku.txt']
     elif DEBUG_LEVEL == 1:
-        # puzzles_files = ['1step.txt']
+        #puzzles_files = ['1step.txt']
         puzzles_files = ['1sudoku.txt']
     else:
         puzzles_files = ['50sudoku.txt']
