@@ -12,7 +12,6 @@ DEBUG_LEVEL = 1
 PRINT_STATEMENTS = False
 
 
-
 class Sudoku:
     SUDOKU_SIDE_LENGTH = 9
     SUDOKU_SUB_SIZE = 3
@@ -21,6 +20,34 @@ class Sudoku:
     # state is a 9x9 array of number in range [0,9]
     def __init__(self, state):
         self.state = state
+        self.domain_space = self.get_all_domain_space()
+
+
+    def get_all_domain_space(self):
+        domain_space = [[None for x in xrange(self.SUDOKU_SIDE_LENGTH)] \
+                              for y in xrange(self.SUDOKU_SIDE_LENGTH)]
+
+        for i in xrange(0, self.SUDOKU_SIDE_LENGTH):
+            for j in xrange(0, self.SUDOKU_SIDE_LENGTH):
+                valid_set = self.get_super_set(i, j)
+
+                # find the difference between all possible numbers and our superset of
+                # currently present numbers
+                valid_set = self.SUDOKU_SET.difference(valid_set)
+                domain_space[i][j] = valid_set
+
+
+        print domain_space
+        return domain_space
+
+    def fill_in_tile(self, row, col, value):
+        old_state = copy.deepcopy(self.state)
+        self.state[row][col] = value
+        new_domain = self.get_super_set(row, col)
+        valid_move = True
+
+        #for
+
 
 
     @classmethod
@@ -407,8 +434,6 @@ class Sudoku:
         possible_states = list()
 
         for new_value in valid_set:
-            if PRINT_STATEMENTS:
-                print "Possible values: ", new_value
             new_state = copy.deepcopy(cur_state.state)
             new_state[zero_location[0]][zero_location[1]] = new_value
             possible_states.append(new_state)
@@ -421,9 +446,6 @@ def solve_sudoku(cur_state, successor_function):
         print "Current state: ", cur_state.get_state()
         print "Valid state: ", cur_state.valid_sudoku()
         print "Solved sudoku: ", cur_state.solved_sudoku()
-    # make sure this is even a vaild solution
-    # if not cur_state.valid_sudoku():
-    #     return False, cur_state
 
     # if the puzzle is solved we are done
     if cur_state.solved_sudoku():
@@ -438,17 +460,25 @@ def solve_sudoku(cur_state, successor_function):
     for zero_location in zero_locations:
         possible_states = successor_function(cur_state, zero_location)
 
+        if len(possible_states) == 0:
+            return False, cur_state
+
         if PRINT_STATEMENTS:
             print "pSta", len(possible_states)
+            print 'zLoc', zero_location
 
+        original_state = copy.deepcopy(cur_state.state)
         for possible_state in possible_states:
-            new_state = Sudoku(possible_state)
-            result, final_state = solve_sudoku(new_state, successor_function)
+            cur_state.state = copy.deepcopy(possible_state)
+            result, final_state = solve_sudoku(cur_state, successor_function)
+            cur_state.state = copy.deepcopy(original_state)
 
             if PRINT_STATEMENTS:
                 print "Result condition: ", result
             if result:
                 return True, final_state
+            else:
+                cur_state.state = copy.deepcopy(original_state)
 
     return False, cur_state
 
@@ -482,13 +512,14 @@ if __name__ == '__main__':
         puzzles_files = ['solved_sudoku.txt']
     elif DEBUG_LEVEL == 1:
         # puzzles_files = ['50sudoku.txt']
-        # puzzles_files = ['1sudoku.txt']
-        puzzles_files = ['1step.txt']
+        puzzles_files = ['1sudoku.txt']
+        #puzzles_files = ['1step.txt']
     else:
         puzzles_files = ['50sudoku.txt']
 
     for puzzles_file in puzzles_files:
         sudoku_puzzles = get_puzzles_from_file(puzzles_folder, puzzles_file)
+        sudoku_puzzles[0].print_state()
         for sudoku_puzzle in sudoku_puzzles:
             sudoku_puzzle.start_timer()
             print "Initial state: ",sudoku_puzzle.get_state()
