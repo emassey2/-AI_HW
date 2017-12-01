@@ -41,6 +41,14 @@ class Sudoku:
             print domain_space
         return domain_space
 
+
+    def fill_in_tile_blind(self, row, col, value):
+        #Update the value in the current cell
+        self.state[row][col] = value
+
+        return True
+
+
     def fill_in_tile(self, row, col, value):
         valid = True
         #Back up of our previous state
@@ -467,7 +475,7 @@ class Sudoku:
         return list(valid_set)
 
 
-def solve_sudoku(cur_state, successor_function):
+def solve_sudoku(cur_state, successor_function, tile_filling_function):
     if PRINT_STATEMENTS:
         print "Current state: ", cur_state.get_state()
         print "Valid state: ", cur_state.valid_sudoku()
@@ -499,11 +507,13 @@ def solve_sudoku(cur_state, successor_function):
 
     original_state = copy.deepcopy(cur_state.state)
     for possible_tile in possible_tiles:
-        tile_filled = cur_state.fill_in_tile(zero_location[0], \
-                                             zero_location[1], \
-                                             possible_tile)
+        tile_filled = tile_filling_function(zero_location[0], \
+                                            zero_location[1], \
+                                            possible_tile)
         if tile_filled:
-            result, final_state = solve_sudoku(cur_state, successor_function)
+            result, final_state = solve_sudoku(cur_state,
+                                               successor_function,
+                                               tile_filling_function)
 
             if PRINT_STATEMENTS:
                 print "Result condition: ", result
@@ -559,7 +569,9 @@ if __name__ == '__main__':
             #success, puzzle_result = \
             #    solve_sudoku(sudoku_puzzle, sudoku_puzzle.get_valid_tiles)
             success, puzzle_result = \
-                solve_sudoku(sudoku_puzzle, sudoku_puzzle.get_all_tiles)
+                solve_sudoku(sudoku_puzzle, \
+                sudoku_puzzle.get_all_tiles, \
+                sudoku_puzzle.fill_in_tile_blind)
             duration = sudoku_puzzle.end_timer()
             print "Solved Puzzle: " + str(success) + '\n' + puzzle_result.get_state()
             print "The algorithm took ", duration, " seconds"
