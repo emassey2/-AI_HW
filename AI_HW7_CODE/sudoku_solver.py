@@ -41,12 +41,47 @@ class Sudoku:
         return domain_space
 
     def fill_in_tile(self, row, col, value):
+        valid = True
+        #Back up of our previous state
         old_state = copy.deepcopy(self.state)
-        self.state[row][col] = value
-        new_domain = self.get_super_set(row, col)
-        valid_move = True
 
-        #for
+        #Update the value in the current cell
+        self.state[row][col] = value
+
+        #Update the domain of the cells in the corresponding row
+        for j in xrange(0, self.SUDOKU_SIDE_LENGTH):
+            valid_set = self.get_super_set(row, j)
+            valid_set = self.SUDOKU_SET.difference(valid_set)
+            if len(valid_set) != 0:
+                self.domain_space[row][j] = valid_set
+            else:
+                valid = False
+
+        #Update the domain of the cells in the corresponding column
+        for i in xrange(0, self.SUDOKU_SIDE_LENGTH):
+            valid_set = self.get_super_set(i, col)
+            valid_set = self.SUDOKU_SET.difference(valid_set)
+            if len(valid_set) != 0:
+                self.domain_space[i][col] = valid_set
+            else:
+                valid = False
+
+        #Update the domain of the cells in the corresponding sub_square
+        #Cells shared between the column, row, and sub_square updating part
+        #are getting reupdated, that could be improved
+        col_start = col*self.SUDOKU_SUB_SIZE
+        row_start = row*self.SUDOKU_SUB_SIZE
+        for col in xrange(col_start, col_start + self.SUDOKU_SUB_SIZE):
+            for row in xrange(row_start, row_start + self.SUDOKU_SUB_SIZE):
+                valid_set = self.get_super_set(row, col)
+                valid_set = self.SUDOKU_SET.difference(valid_set)
+                if len(valid_set) != 0:
+                    self.domain_space[row][col] = valid_set
+                else:
+                    False
+        if not valid:
+            self.state = copy.deepcopy(old_state)
+        return valid
 
 
 
