@@ -273,12 +273,12 @@ class Sudoku:
             for row in xrange(row_start, row_start + self.SUDOKU_SUB_SIZE):
                 cur_value = self.state[row][col]
 
-            if cur_value != '0':
-                if cur_value in sub_square:
-                    valid = False
-                    break;
-                else:
-                    sub_square[cur_value] = cur_value
+                if cur_value != '0':
+                    if cur_value in sub_square:
+                        valid = False
+                        break;
+                    else:
+                        sub_square[cur_value] = cur_value
 
         if PRINT_STATEMENTS and DEBUG_LEVEL >= 3:
             print sub_square
