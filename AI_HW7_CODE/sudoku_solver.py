@@ -9,7 +9,7 @@ import time
 
 
 DEBUG_LEVEL = 1
-PRINT_STATEMENTS = False
+PRINT_STATEMENTS = True
 
 
 class Sudoku:
@@ -69,8 +69,8 @@ class Sudoku:
         #Update the domain of the cells in the corresponding sub_square
         #Cells shared between the column, row, and sub_square updating part
         #are getting reupdated, that could be improved
-        col_start = col*self.SUDOKU_SUB_SIZE
-        row_start = row*self.SUDOKU_SUB_SIZE
+        col_start = col/self.SUDOKU_SUB_SIZE
+        row_start = row/self.SUDOKU_SUB_SIZE
         for col in xrange(col_start, col_start + self.SUDOKU_SUB_SIZE):
             for row in xrange(row_start, row_start + self.SUDOKU_SUB_SIZE):
                 valid_set = self.get_super_set(row, col)
@@ -79,8 +79,10 @@ class Sudoku:
                     self.domain_space[row][col] = valid_set
                 else:
                     False
+
         if not valid:
             self.state = copy.deepcopy(old_state)
+
         return valid
 
 
@@ -446,34 +448,19 @@ class Sudoku:
         return delta
 
 
-    def get_all_successors(self, cur_state, zero_location):
-        possible_states = list()
-
-        for new_value in self.SUDOKU_SET:
-            new_state = copy.deepcopy(cur_state.state)
-            new_state[zero_location[0]][zero_location[1]] = new_value
-            possible_states.append(new_state)
-
-        return possible_states
+    def get_all_tiles(self, cur_state, zero_location):
+        return list(self.SUDOKU_SET)
 
 
-    def get_valid_successors(self, cur_state, zero_location):
+    def get_valid_tiles(self, cur_state, zero_location):
         # get all the numbers in the row, col, and sub_square of our current 0 position
         valid_set = self.get_super_set(zero_location[0], zero_location[1])
 
         # find the difference between all possible numbers and our superset of
         # currently present numbers
         valid_set = self.SUDOKU_SET.difference(valid_set)
-        if PRINT_STATEMENTS:
-            print "Possible set: ", valid_set
-        possible_states = list()
 
-        for new_value in valid_set:
-            new_state = copy.deepcopy(cur_state.state)
-            new_state[zero_location[0]][zero_location[1]] = new_value
-            possible_states.append(new_state)
-
-        return possible_states
+        return list(valid_set)
 
 
 def solve_sudoku(cur_state, successor_function):
@@ -489,31 +476,25 @@ def solve_sudoku(cur_state, successor_function):
     # if it isn't solved yet, find the zeros and try different solutions
     zero_locations = cur_state.find_zeros()
 
-    if PRINT_STATEMENTS:
-        print "zLoc", len(zero_locations)
 
     for zero_location in zero_locations:
-        possible_states = successor_function(cur_state, zero_location)
+        possible_tiles = successor_function(cur_state, zero_location)
 
-        if len(possible_states) == 0:
-            return False, cur_state
-
-        if PRINT_STATEMENTS:
-            print "pSta", len(possible_states)
-            print 'zLoc', zero_location
 
         original_state = copy.deepcopy(cur_state.state)
-        for possible_state in possible_states:
-            cur_state.state = copy.deepcopy(possible_state)
-            result, final_state = solve_sudoku(cur_state, successor_function)
-            cur_state.state = copy.deepcopy(original_state)
+        for possible_tile in possible_tiles:
+            tile_filled = cur_state.fill_in_tile(zero_location[0], \
+                                                 zero_location[1], \
+                                                 possible_tile)
+            if tile_filled:
+                result, final_state = solve_sudoku(cur_state, successor_function)
 
-            if PRINT_STATEMENTS:
-                print "Result condition: ", result
-            if result:
-                return True, final_state
-            else:
-                cur_state.state = copy.deepcopy(original_state)
+                if PRINT_STATEMENTS:
+                    print "Result condition: ", result
+                if result:
+                    return True, final_state
+                else:
+                    cur_state.state = copy.deepcopy(original_state)
 
     return False, cur_state
 
@@ -559,9 +540,9 @@ if __name__ == '__main__':
             sudoku_puzzle.start_timer()
             print "Initial state: ",sudoku_puzzle.get_state()
             success, puzzle_result = \
-                solve_sudoku(sudoku_puzzle, sudoku_puzzle.get_valid_successors)
+                solve_sudoku(sudoku_puzzle, sudoku_puzzle.get_valid_tiles)
             # success, puzzle_result = \
-            #     solve_sudoku(sudoku_puzzle, sudoku_puzzle.get_all_successors)
+            #     solve_sudoku(sudoku_puzzle, sudoku_puzzle.get_all_tiles)
             duration = sudoku_puzzle.end_timer()
             print "Solved Puzzle: " + str(success) + '\n' + puzzle_result.get_state()
             print "The algorithm took ", duration, " seconds"
