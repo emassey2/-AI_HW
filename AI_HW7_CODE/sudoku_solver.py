@@ -8,8 +8,8 @@ from sets import Set
 import time
 
 
-DEBUG_LEVEL = 1
-PRINT_STATEMENTS = True
+DEBUG_LEVEL = 0
+PRINT_STATEMENTS = False
 
 
 class Sudoku:
@@ -37,7 +37,8 @@ class Sudoku:
                 domain_space[i][j] = valid_set
 
 
-        print domain_space
+        if PRINT_STATEMENTS:
+            print domain_space
         return domain_space
 
     def fill_in_tile(self, row, col, value):
@@ -50,35 +51,38 @@ class Sudoku:
 
         #Update the domain of the cells in the corresponding row
         for j in xrange(0, self.SUDOKU_SIDE_LENGTH):
-            valid_set = self.get_super_set(row, j)
-            valid_set = self.SUDOKU_SET.difference(valid_set)
-            if len(valid_set) != 0:
-                self.domain_space[row][j] = valid_set
-            else:
-                valid = False
+            if self.state[row][j] == '0':
+                valid_set = self.get_super_set(row, j)
+                valid_set = self.SUDOKU_SET.difference(valid_set)
+                if len(valid_set) != 0:
+                    self.domain_space[row][j] = valid_set
+                else:
+                    valid = False
 
         #Update the domain of the cells in the corresponding column
         for i in xrange(0, self.SUDOKU_SIDE_LENGTH):
-            valid_set = self.get_super_set(i, col)
-            valid_set = self.SUDOKU_SET.difference(valid_set)
-            if len(valid_set) != 0:
-                self.domain_space[i][col] = valid_set
-            else:
-                valid = False
+            if self.state[i][col] == '0':
+                valid_set = self.get_super_set(i, col)
+                valid_set = self.SUDOKU_SET.difference(valid_set)
+                if len(valid_set) != 0:
+                    self.domain_space[i][col] = valid_set
+                else:
+                    valid = False
 
         #Update the domain of the cells in the corresponding sub_square
         #Cells shared between the column, row, and sub_square updating part
         #are getting reupdated, that could be improved
         col_start = col/self.SUDOKU_SUB_SIZE
         row_start = row/self.SUDOKU_SUB_SIZE
-        for col in xrange(col_start, col_start + self.SUDOKU_SUB_SIZE):
-            for row in xrange(row_start, row_start + self.SUDOKU_SUB_SIZE):
-                valid_set = self.get_super_set(row, col)
-                valid_set = self.SUDOKU_SET.difference(valid_set)
-                if len(valid_set) != 0:
-                    self.domain_space[row][col] = valid_set
-                else:
-                    False
+        for i in xrange(col_start, col_start + self.SUDOKU_SUB_SIZE):
+            for j in xrange(row_start, row_start + self.SUDOKU_SUB_SIZE):
+                if self.state[i][j] == '0':
+                    valid_set = self.get_super_set(i, j)
+                    valid_set = self.SUDOKU_SET.difference(valid_set)
+                    if len(valid_set) != 0:
+                        self.domain_space[i][j] = valid_set
+                    else:
+                        False
 
         if not valid:
             self.state = copy.deepcopy(old_state)
@@ -416,7 +420,7 @@ class Sudoku:
 
 
     # search through our sudoku and find all the blank spaces (the 0s)
-    def find_zeros(self):
+    def get_next_zero(self):
         zero_locations = list()
 
         for i in xrange(0, self.SUDOKU_SIDE_LENGTH):
@@ -473,28 +477,41 @@ def solve_sudoku(cur_state, successor_function):
     if cur_state.solved_sudoku():
         return True, cur_state
 
+    if not cur_state.valid_sudoku():
+        return False, cur_state
+
     # if it isn't solved yet, find the zeros and try different solutions
-    zero_locations = cur_state.find_zeros()
+    zero_locations = cur_state.get_next_zero()
+
+    # make sure there are zeros left on the board
+    # in the case we aren't done but there are no zeros left
+    # something very very bad has happend....
+    if len(zero_locations) == 0:
+        print "BROKEN"
+        cur_state.print_state()
+        return False, cur_state
+    else:
+        zero_location = zero_locations.pop(0)
 
 
-    for zero_location in zero_locations:
-        possible_tiles = successor_function(cur_state, zero_location)
+    possible_tiles = successor_function(cur_state, zero_location)
 
 
-        original_state = copy.deepcopy(cur_state.state)
-        for possible_tile in possible_tiles:
-            tile_filled = cur_state.fill_in_tile(zero_location[0], \
-                                                 zero_location[1], \
-                                                 possible_tile)
-            if tile_filled:
-                result, final_state = solve_sudoku(cur_state, successor_function)
+    original_state = copy.deepcopy(cur_state.state)
+    for possible_tile in possible_tiles:
+        tile_filled = cur_state.fill_in_tile(zero_location[0], \
+                                             zero_location[1], \
+                                             possible_tile)
+        if tile_filled:
+            result, final_state = solve_sudoku(cur_state, successor_function)
 
-                if PRINT_STATEMENTS:
-                    print "Result condition: ", result
-                if result:
-                    return True, final_state
-                else:
-                    cur_state.state = copy.deepcopy(original_state)
+            if PRINT_STATEMENTS:
+                print "Result condition: ", result
+
+            if result:
+                return True, final_state
+            else:
+                cur_state.state = copy.deepcopy(original_state)
 
     return False, cur_state
 
@@ -539,10 +556,10 @@ if __name__ == '__main__':
         for sudoku_puzzle in sudoku_puzzles:
             sudoku_puzzle.start_timer()
             print "Initial state: ",sudoku_puzzle.get_state()
+            #success, puzzle_result = \
+            #    solve_sudoku(sudoku_puzzle, sudoku_puzzle.get_valid_tiles)
             success, puzzle_result = \
-                solve_sudoku(sudoku_puzzle, sudoku_puzzle.get_valid_tiles)
-            # success, puzzle_result = \
-            #     solve_sudoku(sudoku_puzzle, sudoku_puzzle.get_all_tiles)
+                solve_sudoku(sudoku_puzzle, sudoku_puzzle.get_all_tiles)
             duration = sudoku_puzzle.end_timer()
             print "Solved Puzzle: " + str(success) + '\n' + puzzle_result.get_state()
             print "The algorithm took ", duration, " seconds"
