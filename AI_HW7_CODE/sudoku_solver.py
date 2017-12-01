@@ -41,14 +41,6 @@ class Sudoku:
             print domain_space
         return domain_space
 
-
-    def fill_in_tile_blind(self, row, col, value):
-        #Update the value in the current cell
-        self.state[row][col] = value
-
-        return True
-
-
     def fill_in_tile(self, row, col, value):
         valid = True
         #Back up of our previous state
@@ -97,6 +89,11 @@ class Sudoku:
 
         return valid
 
+    def fill_in_tile_blind(self, row, col, value):
+        #Update the value in the current cell
+        self.state[row][col] = value
+
+        return True
 
 
     @classmethod
@@ -127,6 +124,17 @@ class Sudoku:
             state_str += horizontal_bar
         state_str = state_str[:-len(horizontal_bar)]
 
+        return state_str
+    @classmethod
+    def sudoku_array_to_str_file(self, sudoku_array):
+        state_str = ''
+        for i in xrange(0, self.SUDOKU_SUB_SIZE):
+            for j in xrange(0, self.SUDOKU_SUB_SIZE):
+                for k in xrange(0, self.SUDOKU_SUB_SIZE):
+                    for l in xrange(0, self.SUDOKU_SUB_SIZE):
+                        state_str += str(sudoku_array[j + i*self.SUDOKU_SUB_SIZE]\
+                                                     [l + k*self.SUDOKU_SUB_SIZE])
+                state_str += '\n'
         return state_str
 
 
@@ -446,6 +454,9 @@ class Sudoku:
     def get_state(self):
         return Sudoku.sudoku_array_to_str(self.state)
 
+    def get_state_file(self):
+        return Sudoku.sudoku_array_to_str_file(self.state)
+
 
     def print_state(self):
         print self.get_state()
@@ -454,9 +465,16 @@ class Sudoku:
     def start_timer(self):
         self.starting_time = time.clock()
 
+    def start_origin_timer(self):
+        self.origin_time = time.clock()
+
 
     def end_timer(self):
         delta = time.clock() - self.starting_time
+        return delta
+
+    def end_origin_timer(self):
+        delta = time.clock() - self.origin_time
         return delta
 
 
@@ -525,7 +543,6 @@ def solve_sudoku(cur_state, successor_function, tile_filling_function):
 
     return False, cur_state
 
-
 def get_puzzles_from_file(puzzles_folder, puzzles_file):
     # defined by the file format
     # first line is the name followed by the 9 number lines
@@ -546,11 +563,21 @@ def get_puzzles_from_file(puzzles_folder, puzzles_file):
 
     return sudoku_puzzles
 
+def create_file(solved_puzzles):
+    # f = open('arc_consistency.txt','w')
+    f = open('backtracking.txt','w')
+    puzzle_number = 1
+    for puzzle in solved_puzzles:
+        f.write('Grid ' +str(puzzle_number) + '\n')
+        for line in puzzle:
+            f.write(line)
+        puzzle_number += 1
 
 
 if __name__ == '__main__':
     sys.setrecursionlimit(10000)
     puzzles_folder = './'
+    output_result = list()
     if DEBUG_LEVEL == 2:
         puzzles_files = ['solved_sudoku.txt']
     elif DEBUG_LEVEL == 1:
@@ -563,11 +590,14 @@ if __name__ == '__main__':
     for puzzles_file in puzzles_files:
         sudoku_puzzles = get_puzzles_from_file(puzzles_folder, puzzles_file)
         sudoku_puzzles[0].print_state()
+        sudoku_puzzles[0].start_origin_timer()
         for sudoku_puzzle in sudoku_puzzles:
             sudoku_puzzle.start_timer()
             print "Initial state: ",sudoku_puzzle.get_state()
-            #success, puzzle_result = \
-            #    solve_sudoku(sudoku_puzzle, sudoku_puzzle.get_valid_tiles)
+            # success, puzzle_result = \
+            #    solve_sudoku(sudoku_puzzle, \
+            #    sudoku_puzzle.get_valid_tiles, \
+            #    sudoku_puzzle.fill_in_tile)
             success, puzzle_result = \
                 solve_sudoku(sudoku_puzzle, \
                 sudoku_puzzle.get_all_tiles, \
@@ -575,3 +605,8 @@ if __name__ == '__main__':
             duration = sudoku_puzzle.end_timer()
             print "Solved Puzzle: " + str(success) + '\n' + puzzle_result.get_state()
             print "The algorithm took ", duration, " seconds"
+            output_result.append(puzzle_result.get_state_file())
+        total_duration = sudoku_puzzles[0].end_origin_timer()
+        print "The total ", len(sudoku_puzzles)," puzzles took ", \
+            total_duration, " seconds "
+        create_file(output_result)
