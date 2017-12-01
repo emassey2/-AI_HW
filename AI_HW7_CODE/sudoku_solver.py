@@ -8,7 +8,7 @@ from sets import Set
 import time
 
 
-DEBUG_LEVEL = 2
+DEBUG_LEVEL = 1
 PRINT_STATEMENTS = False
 
 
@@ -247,13 +247,18 @@ class Sudoku:
     # returns FALSE in the presence of blanks
     def solved_column(self, column_number):
         column = list()
+        valid = True
 
         if PRINT_STATEMENTS and DEBUG_LEVEL >= 3:
             print "Checking col..."
 
         # find every number in our column
         for row in xrange(0, self.SUDOKU_SIDE_LENGTH):
-            column.append(self.state[row][column_number])
+            cur_value = self.state[row][column_number]
+            if cur_value != '0':
+                if cur_value in column:
+                    valid = False
+            column.append(cur_value)
 
         if PRINT_STATEMENTS and DEBUG_LEVEL >= 3:
             print column
@@ -262,19 +267,24 @@ class Sudoku:
         column_set = set(column)
 
         # if our column doesn't contain all the numbers [1,9] return false
-        return len(column_set.difference(self.SUDOKU_SET)) == 0
+        return (len(column_set.difference(self.SUDOKU_SET)) == 0) and valid
 
 
     # returns FALSE in the presence of blanks
     def solved_row(self, row_number):
         row = list()
+        valid = True
 
         if PRINT_STATEMENTS and DEBUG_LEVEL >= 3:
             print "Checking row..."
 
         # find every number in our row
         for col in xrange(0, self.SUDOKU_SIDE_LENGTH):
-            row.append(self.state[row_number][col])
+            cur_value = self.state[row_number][col]
+            if cur_value != '0':
+                if cur_value in row:
+                    valid = False
+            row.append(cur_value)
 
         if PRINT_STATEMENTS and DEBUG_LEVEL >= 3:
             print row
@@ -283,12 +293,13 @@ class Sudoku:
         row_set = set(row)
 
         # if our row doesn't contain all the numbers [1,9] return false
-        return len(row_set.difference(self.SUDOKU_SET)) == 0
+        return (len(row_set.difference(self.SUDOKU_SET)) == 0) and valid
 
 
     # returns FALSE in the presence of blanks
     def solved_sub_square(self, row, col):
         sub_square = list()
+        valid = True
 
         if PRINT_STATEMENTS and DEBUG_LEVEL >= 3:
             print "Checking sub square..."
@@ -298,7 +309,11 @@ class Sudoku:
         row_start = row*self.SUDOKU_SUB_SIZE
         for col in xrange(col_start, col_start + self.SUDOKU_SUB_SIZE):
             for row in xrange(row_start, row_start + self.SUDOKU_SUB_SIZE):
-                sub_square.append(self.state[row][col])
+                cur_value = self.state[row][col]
+                if cur_value != '0':
+                    if cur_value in sub_square:
+                        valid = False
+                sub_square.append(cur_value)
 
         if PRINT_STATEMENTS and DEBUG_LEVEL >= 3:
             print sub_square
@@ -307,7 +322,7 @@ class Sudoku:
         sub_square_set = set(sub_square)
 
         # if our row doesn't contain all the numbers [1,9] return false
-        return len(sub_square_set.difference(self.SUDOKU_SET)) == 0
+        return (len(sub_square_set.difference(self.SUDOKU_SET)) == 0) and valid
 
 
     # returns FALSE in the presence of blanks
@@ -407,8 +422,8 @@ def solve_sudoku(cur_state, successor_function):
         print "Valid state: ", cur_state.valid_sudoku()
         print "Solved sudoku: ", cur_state.solved_sudoku()
     # make sure this is even a vaild solution
-    if not cur_state.valid_sudoku():
-        return False, cur_state
+    # if not cur_state.valid_sudoku():
+    #     return False, cur_state
 
     # if the puzzle is solved we are done
     if cur_state.solved_sudoku():
@@ -466,17 +481,21 @@ if __name__ == '__main__':
     if DEBUG_LEVEL == 2:
         puzzles_files = ['solved_sudoku.txt']
     elif DEBUG_LEVEL == 1:
-        #puzzles_files = ['1step.txt']
-        puzzles_files = ['1sudoku.txt']
+        # puzzles_files = ['50sudoku.txt']
+        # puzzles_files = ['1sudoku.txt']
+        puzzles_files = ['1step.txt']
     else:
         puzzles_files = ['50sudoku.txt']
 
     for puzzles_file in puzzles_files:
         sudoku_puzzles = get_puzzles_from_file(puzzles_folder, puzzles_file)
         for sudoku_puzzle in sudoku_puzzles:
+            sudoku_puzzle.start_timer()
             print "Initial state: ",sudoku_puzzle.get_state()
             success, puzzle_result = \
                 solve_sudoku(sudoku_puzzle, sudoku_puzzle.get_valid_successors)
             # success, puzzle_result = \
             #     solve_sudoku(sudoku_puzzle, sudoku_puzzle.get_all_successors)
+            duration = sudoku_puzzle.end_timer()
             print "Solved Puzzle: " + str(success) + '\n' + puzzle_result.get_state()
+            print "The algorithm took ", duration, " seconds"
