@@ -16,11 +16,12 @@ def hilite(string, status, bold):
 
 class Board:
 
-    def __init__(self, rows, columns):
+    def __init__(self, rows, columns, goal_length=4):
 
         self.rows = rows
         self.columns = columns
         self.winner = None
+        self.goal_length = goal_length
 
     def create_board(self):
         #Create a 2D array of the size desired
@@ -81,7 +82,7 @@ class Board:
                         vertical_counter += 1
                 else:
                     vertical_counter = 0
-                if vertical_counter >= 4:
+                if vertical_counter >= self.goal_length:
                     if winning_character == self.player_1_token:
                         self.winner = "Player 1"
                     else:
@@ -115,7 +116,7 @@ class Board:
                 # print "cchar ", self.board[i][j]
                 # print "wchar ",winning_character
                 # print "counter ", horizontal_counter
-                if horizontal_counter >= 4:
+                if horizontal_counter >= self.goal_length:
                     if winning_character == self.player_1_token:
                         self.winner = "Player 1"
                     else:
@@ -128,6 +129,84 @@ class Board:
                 # print "pos ", i,j
                 # print "char ",winning_character
                 # print "counter ", vertical_counter
+        return False
+
+    def check_diagonally(self):
+        # TODO simplify and improved counting based off the min number of
+        # tiles in a row (we can eliminate some early diags that have a length
+        # less than goal tiles)
+        horizontal_counter = 0
+        winning_character = ' '
+
+        # start in the lower right hand corner and count up and to the right
+        for start_row in xrange(self.rows, 0, -1):
+            for col in xrange(self.columns, 0, -1):
+                row = self.rows - 1
+
+                while (col < self.columns and row >= 0 ):
+
+                    #print "pos ", row, col
+                    #print "cchar ", self.board[row][col]
+                    #print "wchar ", winning_character
+                    #print "counter ", horizontal_counter
+
+                    if self.board[row][col] != ' ':
+                        if winning_character != self.board[row][col]:
+                            horizontal_counter = 1
+                            winning_character = self.board[row][col]
+                        else:
+                            horizontal_counter += 1
+                    else:
+                        horizontal_counter = 0
+
+                    col += 1
+                    row -= 1
+
+                if horizontal_counter >= self.goal_length:
+                    if winning_character == self.player_1_token:
+                        self.winner = "Player 1"
+                    else:
+                        self.winner = "Player 2"
+                    print "The winner is ", self.winner
+                    return True
+
+                horizontal_counter = 0
+
+
+        # start in the lower left hand corner and count up and to the left
+        for start_row in xrange(self.rows, 0, -1):
+            for col in xrange(self.columns):
+                row = self.rows - 1
+
+                while (col >= 0 and row >= 0 ):
+
+                    if self.board[row][col] != ' ':
+                        if winning_character != self.board[row][col]:
+                            horizontal_counter = 1
+                            winning_character = self.board[row][col]
+                        else:
+                            horizontal_counter += 1
+                    else:
+                        horizontal_counter = 0
+                        #print "pos ", row, col
+                        #print "cchar ", self.board[row][col]
+                        #print "wchar ",winning_character
+                        #print "counter ", horizontal_counter
+
+                    if horizontal_counter >= self.goal_length:
+                        if winning_character == self.player_1_token:
+                            self.winner = "Player 1"
+                        else:
+                            self.winner = "Player 2"
+                        print "The winner is ", self.winner
+                        return True
+
+                    col -= 1
+                    row -= 1
+
+                horizontal_counter = 0
+
+
         return False
 
 
@@ -146,20 +225,34 @@ def test(game):
     game.place_token(5,'o')
     game.place_token(2,'x')
     game.place_token(2,'o')
+
+    game.place_token(3,'o')
+    game.place_token(4,'o')
+    game.place_token(4,'o')
+    game.place_token(5,'o')
+    game.place_token(6,'o')
+    game.place_token(6,'o')
+    game.place_token(6,'o')
+    game.place_token(6,'o')
+    game.place_token(6,'o')
+    game.place_token(6,'o')
     finish = game.check_vertically()
     finish = game.check_horizontally()
+    finish = game.check_diagonally()
     game.print_board()
 
 
 if __name__ == '__main__':
     #Obtain the values from the user
-    rows, columns = raw_input ("Enter the size of the board: (rows col): ").split()
+    #rows, columns = raw_input ("Enter the size of the board: (rows col): ").split()
 
     #Convert the string to int
-    rows = int(rows)
-    columns = int(columns)
+    #rows = int(rows)
+    #columns = int(columns)
 
     #Create the object from class Board
+    rows = 6
+    columns = 7
     game = Board(rows,columns)
 
     #Create the characters for the players
