@@ -272,7 +272,7 @@ class Board:
         total_score = token_score_v + token_score_h + token_score_d
         token_won = token_won_v or token_won_h or token_won_d
 
-        return player_won, total_score
+        return token_won, total_score
 
 def alphabeta_minimax(original_board, max_player, alpha, beta, depth = 8):
 
@@ -389,7 +389,27 @@ if __name__ == '__main__':
     game.create_board()
     game.print_board()
 
-    test(game)
+    gameover = False
+    while not gameover:
+        #player one
+        print 'Player One!'
+        col = int(raw_input('Enter a colum to place a tile\n'))
+        game.place_token(col, 'o')
+        game.print_board()
+        gameover, score = game.goal_test('o')
+        print "o's score: ", score, '\n'
+
+        if not gameover:
+            #player two
+            print 'Player Two!'
+            col = int(raw_input('Enter a colum to place a tile\n'))
+            game.place_token(col, 'x')
+            game.print_board()
+            gameoover, score = game.goal_test('x')
+            print "x's score", score, '\n'
+
+
+    #test(game)
     # matrix[5][3] = 'x'
     # matrix[5][6] = 'o'
     # print matrix
