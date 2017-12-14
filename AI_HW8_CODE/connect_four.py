@@ -89,15 +89,20 @@ class Board:
                     token_score += token_counter**2
                     token_counter = 0
 
-                # if we have won we are done
+                # check if we have won
                 if token_counter >= self.goal_length:
                     token_won = True
-                    return token_won, token_score
+                    token_score = sys.maxint
 
+                    if token_won:
+                        break
 
-            # switching to the next column so we need to update our count/score
-            token_score += token_counter**2
-            token_counter = 0
+            if token_won:
+                break
+            else:
+                # switching to the next column so we need to update our count/score
+                token_score += token_counter**2
+                token_counter = 0
 
         return token_won, token_score
 
@@ -121,15 +126,20 @@ class Board:
                     token_score += token_counter**2
                     token_counter = 0
 
-                # if we have won we are done
+                # check if we have won
                 if token_counter >= self.goal_length:
                     token_won = True
-                    return token_won, token_score
+                    token_score = sys.maxint
 
+                    if token_won:
+                        break
 
-            # switching to the next column so we need to update our count/score
-            token_score += token_counter**2
-            token_counter = 0
+            if token_won:
+                break
+            else:
+                # switching to the next column so we need to update our count/score
+                token_score += token_counter**2
+                token_counter = 0
 
         return token_won, token_score
 
@@ -253,7 +263,80 @@ class Board:
 
         return token_won, token_score
 
+    def goal_test(self,token):
 
+        token_won_v, token_score_v = self.check_vertically(token)
+        token_won_h, token_score_h = self.check_horizontally(token)
+        token_won_d, token_score_d = self.check_diagonally(token)
+        #missing the diagonal
+        total_score = token_score_v + token_score_h + token_score_d
+        token_won = token_won_v or token_won_h or token_won_d
+
+        return player_won, total_score
+
+def alphabeta_minimax(original_board, max_player, alpha, beta, depth = 8):
+
+    if max_player: #True Player 1
+        p_1_won,
+        if depth == 0:
+            return cur_board, depth
+            #Return the board corresponding to the best movement
+
+        value = float("-inf")
+        new_board = copy.deepcopy(original_board)
+
+        for col in xrange(self.columns):
+
+            new_board.place_token(col,new_board.player_1_token)
+            value = max(value, alphabeta_minimax(new_board, False, alpha, beta, depth - 1))
+            alpha = max(alpha,value)
+
+            if beta <= alpha:
+                break #Cutting off the tree
+
+        return cur_board, depth #Not sure
+
+    else: #False Player 2
+        value = float("inf")
+
+        for col in xrange(self.columns):
+
+            cur_board.place_token(col,cur_board.player_2_token)
+            value = min(value, alphabeta_minimax(cur_board, True, alpha, beta, depth - 1))
+            alpha = min(beta,value)
+
+            if beta <= alpha:
+                break #Cutting off the tree
+
+        return cur_board, depth #Not sure
+
+# def minimax(original_board, max_player, depth = 8):
+#     if depth == 0:
+#         return cur_board, depth
+#         #Return the board corresponding to the best movement
+#
+#     if max_player: #True Player 1
+#         bestvalue = float("-inf")
+#         new_board = copy.deepcopy(original_board)
+#
+#         for col in xrange(self.columns):
+#
+#             new_board.place_token(col,new_board.player_1_token)
+#             value = max(value, minimax(new_board, False, depth - 1))
+#             bestvalue = max(bestvalue,value)
+#
+#         return cur_board, depth #Not sure
+#
+#     else: #False Player 2
+#         bestvalue = float("inf")
+#
+#         for col in xrange(self.columns):
+#
+#             cur_board.place_token(col,cur_board.player_2_token)
+#             value = min(value, minimax(cur_board, True, depth - 1))
+#             best = min(bestvalue,value)
+#
+#         return cur_board, depth #Not sure
 
 def test(game):
     game.place_token(1,'x')
@@ -280,12 +363,9 @@ def test(game):
     game.place_token(6,'o')
     game.place_token(6,'o')
     game.place_token(6,'o')
-    win, score = game.check_vertically('o')
-    print win, score
-    win, score = game.check_horizontally('o')
-    print win, score
-    win, score = game.check_diagonally('o')
-    print win, score
+    finish = game.check_vertically('o')
+    finish = game.check_horizontally('o')
+    finish = game.check_diagonally('o')
     game.print_board()
 
 
