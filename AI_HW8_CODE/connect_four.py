@@ -89,22 +89,17 @@ class Board:
                     token_score += token_counter**2
                     token_counter = 0
 
-                # check if we have won
+                # if we have won we are done
                 if token_counter >= self.goal_length:
                     token_won = True
-                    token_score = sys.maxint
+                    return token_won, token_score
 
-                    if token_won:
-                        break
 
-            if token_won:
-                break
-            else:
-                # switching to the next column so we need to update our count/score
-                token_score += token_counter**2
-                token_counter = 0
+            # switching to the next column so we need to update our count/score
+            token_score += token_counter**2
+            token_counter = 0
 
-        return token_won
+        return token_won, token_score
 
 
     # this check doubles as a heuristic
@@ -126,154 +121,137 @@ class Board:
                     token_score += token_counter**2
                     token_counter = 0
 
-                # check if we have won
+                # if we have won we are done
                 if token_counter >= self.goal_length:
                     token_won = True
-                    token_score = sys.maxint
+                    return token_won, token_score
 
-                    if token_won:
-                        break
 
-            if token_won:
-                break
-            else:
-                # switching to the next column so we need to update our count/score
-                token_score += token_counter**2
-                token_counter = 0
+            # switching to the next column so we need to update our count/score
+            token_score += token_counter**2
+            token_counter = 0
 
-        return token_won
+        return token_won, token_score
 
 
     def check_diagonally(self, token):
-        '''
-        # TODO simplify and improved counting based off the min number of
-        # tiles in a row (we can eliminate some early diags that have a length
-        # less than goal tiles)
         token_counter = 0
         token_won = False
         token_score = 0
-
 
         # explore up and to the right, move along the bottom row
         for starting_col in xrange(self.columns - (self.goal_length), -1, -1):
             row = self.rows - 1
             col = starting_col
             while (col < self.columns and row >= 0 ):
+
+                # if we have seen another one of our tokens, increment our count
+                if self.board[row][col] == token:
+                    token_counter += 1
+
+                # this isn't our token. add to our score and reset our count
+                else:
+                    token_score += token_counter**2
+                    token_counter = 0
+
+                # if we have won we are done
+                if token_counter >= self.goal_length:
+                    token_won = True
+                    return token_won, token_score
+
                 col += 1
                 row -= 1
+
+            # switching to the next diag so we need to update our count/score
+            token_score += token_counter**2
+            token_counter = 0
 
         # explore up and to the right, move up the left most column
         for starting_row in xrange(self.rows-1, self.rows - (self.goal_length), -1):
             row = starting_row
             col = 0
+
             while (col < self.columns and row >= 0 ):
+
+                # if we have seen another one of our tokens, increment our count
+                if self.board[row][col] == token:
+                    token_counter += 1
+
+                # this isn't our token. add to our score and reset our count
+                else:
+                    token_score += token_counter**2
+                    token_counter = 0
+
+                # if we have won we are done
+                if token_counter >= self.goal_length:
+                    token_won = True
+                    return token_won, token_score
+
                 col += 1
                 row -= 1
 
-
+            # switching to the next diag so we need to update our count/score
+            token_score += token_counter**2
+            token_counter = 0
 
 
         # explore up and to the left, move along the bottom row
-        for starting_col in xrange(self.columns - (self.goal_length), -1, -1):
+        for starting_col in xrange(self.goal_length-1, self.columns):
             row = self.rows - 1
             col = starting_col
-            print starting_col
-            while (col < self.columns and row >= 0 ):
-                print col, row
-                col += 1
+
+            while (col >=0 and row >= 0 ):
+
+                # if we have seen another one of our tokens, increment our count
+                if self.board[row][col] == token:
+                    token_counter += 1
+
+                # this isn't our token. add to our score and reset our count
+                else:
+                    token_score += token_counter**2
+                    token_counter = 0
+
+                # if we have won we are done
+                if token_counter >= self.goal_length:
+                    token_won = True
+                    return token_won, token_score
+
+                col -= 1
                 row -= 1
+
+            # switching to the next diag so we need to update our count/score
+            token_score += token_counter**2
+            token_counter = 0
 
         # explore up and to the left, move up the right most column
         for starting_row in xrange(self.rows-1, self.rows - (self.goal_length), -1):
             row = starting_row
-            col = 0
-            while (col < self.columns and row >= 0 ):
-                col += 1
-                row -= 1
+            col = self.columns - 1
 
+            while (col >= 0 and row >= 0 ):
 
-        # start in the lower right hand corner and count up and to the right
-        for start_row in xrange(self.rows, 0, -1):
-            for col in xrange(self.columns, 0, -1):
-                row = self.rows - 1
+                # if we have seen another one of our tokens, increment our count
+                if self.board[row][col] == token:
+                    token_counter += 1
 
-                while (col < self.columns and row >= 0 ):
-
-                    # if we have seen another one of our tokens, increment our count
-                    if self.board[i][j] == token:
-                        token_counter += 1
-
-                    # this isn't our token. add to our score and reset our count
-                    else:
-                        token_score += token_counter**2
-                        token_counter = 0
-
-                    # check if we have won
-                    if token_counter >= self.goal_length:
-                        token_won = True
-                        token_score = sys.maxint
-
-                        if token_won:
-                            break
-
-                if token_won:
-                    break
+                # this isn't our token. add to our score and reset our count
                 else:
-                    # switching to the next column so we need to update our count/score
                     token_score += token_counter**2
                     token_counter = 0
 
-
-                    col += 1
-                    row -= 1
-
+                # if we have won we are done
                 if token_counter >= self.goal_length:
-                    if winning_character == self.player_1_token:
-                        self.winner = "Player 1"
-                    else:
-                        self.winner = "Player 2"
-                    print "The winner is ", self.winner
-                    return True
+                    token_won = True
+                    return token_won, token_score
 
-                token_counter = 0
+                col -= 1
+                row -= 1
 
+            # switching to the next diag so we need to update our count/score
+            token_score += token_counter**2
+            token_counter = 0
 
-        # start in the lower left hand corner and count up and to the left
-        for start_row in xrange(self.rows, 0, -1):
-            for col in xrange(self.columns):
-                row = self.rows - 1
-
-                while (col >= 0 and row >= 0 ):
-
-                    if self.board[row][col] != ' ':
-                        if winning_character != self.board[row][col]:
-                            token_counter = 1
-                            winning_character = self.board[row][col]
-                        else:
-                            token_counter += 1
-                    else:
-                        token_counter = 0
-                        #print "pos ", row, col
-                        #print "cchar ", self.board[row][col]
-                        #print "wchar ",winning_character
-                        #print "counter ", token_counter
-
-                    if token_counter >= self.goal_length:
-                        if winning_character == self.player_1_token:
-                            self.winner = "Player 1"
-                        else:
-                            self.winner = "Player 2"
-                        print "The winner is ", self.winner
-                        return True
-
-                    col -= 1
-                    row -= 1
-
-                token_counter = 0
-                '''
-
-
-        return False
+        return token_won, token_score
 
 
 
@@ -302,9 +280,12 @@ def test(game):
     game.place_token(6,'o')
     game.place_token(6,'o')
     game.place_token(6,'o')
-    finish = game.check_vertically('o')
-    finish = game.check_horizontally('o')
-    finish = game.check_diagonally('o')
+    win, score = game.check_vertically('o')
+    print win, score
+    win, score = game.check_horizontally('o')
+    print win, score
+    win, score = game.check_diagonally('o')
+    print win, score
     game.print_board()
 
 
