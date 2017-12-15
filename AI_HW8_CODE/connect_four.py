@@ -285,6 +285,7 @@ class Board:
         for col in xrange(self.columns):
             print "Currently at col ", col
             print "Best value ", best_value
+            self.place_token(col, player_token)
             value = alphabeta_minimax(self, False, NEG_INF, POS_INF, 0)
             if value > best_value:
                 best_value = value
