@@ -2,7 +2,7 @@ import sys
 import copy
 import math
 
-MAX_DEPTH = 2
+MAX_DEPTH = 5
 NEG_INF = float("-inf")
 POS_INF = float("inf")
 
@@ -285,13 +285,13 @@ class Board:
         return token_won, total_score
 
     def best_move(self, player_token):
-        best_value = 0
+        best_value = NEG_INF
         best_col = 0
         new_board = copy.deepcopy(self)
         for col in xrange(self.columns):
             valid = new_board.place_token(col, player_token)
             if valid:
-                value = alphabeta_minimax(new_board, True, NEG_INF, POS_INF, 0)
+                value = ab_min(new_board, player_token, NEG_INF, POS_INF, 1)
                 print 'v  ', value
                 print 'bv ', best_value
                 if value > best_value:
@@ -301,66 +301,64 @@ class Board:
 
         return best_value, best_col
 
+def ab_min(original_board, token, alpha, beta, depth = 0):
+    won, score = original_board.goal_test(token)
 
-def alphabeta_minimax(original_board, max_player, alpha, beta, depth = 0):
+    if depth >= MAX_DEPTH or won:
+        score = math.ceil(float(score) / float(2**depth))
+        if token == 'o':
+            score = -score
+        print 'min end ', score
+        return score
 
-    if max_player: #True Player 1
-        p1_won, p1_score_or = original_board.goal_test(original_board.player_1_token)
+    new_token = 'x' if token == 'o' else 'o'
+    new_board = copy.deepcopy(original_board)
 
-        if depth == MAX_DEPTH or p1_won:
-            p1_score_or = math.ceil(float(p1_score_or) / float(2**depth))
-            if p1_won:
-                print 'terminal1 ', p1_score_or
-            return p1_score_or
+    for col in xrange(original_board.columns):
+        valid = new_board.place_token(col, new_token)
 
-        value = NEG_INF
+        if valid:
+            max_val = ab_max(new_board, new_token, alpha, beta, depth + 1)
+            beta = min(beta, max_val)
+            print token, 'score', score
+            new_board.print_board()
+
         new_board = copy.deepcopy(original_board)
 
-        for col in xrange(original_board.columns):
-            valid = new_board.place_token(col,new_board.player_1_token)
+        if alpha >= beta:
+            break #Cutting off the tree
 
-            if valid:
-                p1_score = alphabeta_minimax(new_board, False, alpha, beta, depth + 1)
-                print 'p1 ', p1_score
-                new_board.print_board()
-                value = max(value, p1_score)
-                alpha = max(alpha, value)
+    return beta
 
 
-            if beta <= alpha:
-                break #Cutting off the tree
-            new_board = copy.deepcopy(original_board)
+def ab_max(original_board, token, alpha, beta, depth = 0):
+    won, score = original_board.goal_test(token)
 
-        return value
+    if depth >= MAX_DEPTH or won:
+        score = math.ceil(float(score) / float(2**depth))
+        if token == 'x':
+            score = -score
+        print 'max end ', score
+        return score
 
-    else: #False Player 2
-        p2_won, p2_score_or = original_board.goal_test(original_board.player_2_token)
+    new_token = 'x' if token == 'o' else 'o'
+    new_board = copy.deepcopy(original_board)
 
-        if depth == MAX_DEPTH or p2_won:
-            p2_score_or = math.ceil(float(p1_score_or) / float(2**depth))
-            if p2_score_or:
-                print 'terminal1 ', p2_score_or
-            return p2_score_or
+    for col in xrange(original_board.columns):
+        valid = new_board.place_token(col, new_token)
 
-        value = POS_INF
+        if valid:
+            min_val = ab_min(new_board, new_token, alpha, beta, depth + 1)
+            alpha = max(alpha, min_val)
+            print token, 'score', score
+            new_board.print_board()
+
         new_board = copy.deepcopy(original_board)
 
-        for col in xrange(original_board.columns):
+        if alpha <= beta:
+            break #Cutting off the tree
 
-            valid = new_board.place_token(col,new_board.player_2_token)
-            if valid:
-                p2_score = alphabeta_minimax(new_board, True, alpha, beta, depth + 1)
-                print 'p2 ', p2_score
-                new_board.print_board()
-                value = min(value, p2_score)
-                beta = min(beta, value)
-
-            if beta <= alpha:
-                break #Cutting off the tree
-
-            new_board = copy.deepcopy(original_board)
-
-        return value
+    return alpha
 
 # def minimax(original_board, max_player, depth = 8):
 #     if depth == 0:
@@ -391,9 +389,29 @@ def alphabeta_minimax(original_board, max_player, alpha, beta, depth = 0):
 #         return cur_board, depth #Not sure
 
 def test(game):
-    game.place_token(0,'x')
-    game.place_token(0,'x')
-    game.place_token(0,'x')
+    game.place_token(2,'x')
+    game.place_token(2,'x')
+    game.place_token(2,'x')
+    #game.place_token(0,'o')
+
+    #game.place_token(1,'x')
+    #game.place_token(1,'o')
+    #game.place_token(1,'o')
+
+    #game.place_token(2,'o')
+
+    #game.place_token(3,'x')
+    #game.place_token(3,'x')
+    #game.place_token(3,'x')
+    #game.place_token(3,'o')
+
+    #game.place_token(4,'o')
+    #game.place_token(4,'x')
+    #game.place_token(4,'x')
+    #game.place_token(4,'x')
+    #game.place_token(4,'o')
+
+    #game.place_token(5,'o')
 
     finish = game.check_vertically('o')
     print finish
@@ -430,7 +448,7 @@ if __name__ == '__main__':
         #player one
         print 'Player One!'
         # col = int(raw_input('Enter a colum to place a tile\n'))
-        value, col = game.best_move(game.player_1_token)
+        value, col = game.best_move('o')
         game.place_token(col, 'o')
         game.print_board()
         gameover, score = game.goal_test('o')
