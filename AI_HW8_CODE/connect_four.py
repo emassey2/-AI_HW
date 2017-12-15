@@ -1,4 +1,9 @@
 import sys
+import copy
+
+MAX_DEPTH = 3
+NEG_INF = float("-inf")
+POS_INF = float("inf")
 
 def hilite(string, status, bold):
 
@@ -274,41 +279,88 @@ class Board:
 
         return token_won, total_score
 
-def alphabeta_minimax(original_board, max_player, alpha, beta, depth = 8):
+    def best_move(self, player_token):
+        best_value = 0
+        best_col = 0
+        for col in xrange(self.columns):
+            print "Currently at col ", col
+            print "Best value ", best_value
+            value = alphabeta_minimax(self, False, NEG_INF, POS_INF, 0)
+            if value > best_value:
+                best_value = value
+                best_col = col
+        return best_value, best_col
+
+
+def alphabeta_minimax(original_board, max_player, alpha, beta, depth = 0):
 
     if max_player: #True Player 1
-        p_1_won,
-        if depth == 0:
-            return cur_board, depth
-            #Return the board corresponding to the best movement
+        p_1_won, p1_score_or = original_board.goal_test(original_board.player_1_token)
 
-        value = float("-inf")
+        if depth == MAX_DEPTH or p_1_won:
+            return p1_score_or / (2**depth)
+
+        value = NEG_INF
         new_board = copy.deepcopy(original_board)
 
-        for col in xrange(self.columns):
-
+        for col in xrange(original_board.columns):
             new_board.place_token(col,new_board.player_1_token)
-            value = max(value, alphabeta_minimax(new_board, False, alpha, beta, depth - 1))
+
+
+            p1_score = alphabeta_minimax(new_board,
+                                           False,
+                                           alpha,
+                                           beta,
+                                           depth + 1)
+            if p1_score > value:
+                print "Trying P1 col ", col, " at depth ", depth
+                print "P1 score ", p1_score
+                new_board.print_board()
+
+            value = max(value, p1_score)
+
+            if value > alpha:
+                print "Alpha has been updated"
             alpha = max(alpha,value)
 
+
             if beta <= alpha:
                 break #Cutting off the tree
+            new_board = copy.deepcopy(original_board)
 
-        return cur_board, depth #Not sure
+        return value
 
     else: #False Player 2
-        value = float("inf")
+        p_2_won, p2_score_or = original_board.goal_test(original_board.player_2_token)
 
-        for col in xrange(self.columns):
+        if depth == MAX_DEPTH or p_2_won:
+            return p2_score_or / (2**depth)
 
-            cur_board.place_token(col,cur_board.player_2_token)
-            value = min(value, alphabeta_minimax(cur_board, True, alpha, beta, depth - 1))
-            alpha = min(beta,value)
+        value = POS_INF
+        new_board = copy.deepcopy(original_board)
+
+        for col in xrange(original_board.columns):
+
+            new_board.place_token(col,new_board.player_2_token)
+            p2_score = alphabeta_minimax(new_board,
+                                           True,
+                                           alpha,
+                                           beta,
+                                           depth + 1)
+            if p2_score < value:
+                print "Trying P2 col ", col, " at depth ", depth
+                print "P2 score ", p2_score
+                new_board.print_board()
+            value = min(value, p2_score)
+
+            if value < beta:
+                print "Beta has ben updated"
+            beta = min(beta,value)
 
             if beta <= alpha:
                 break #Cutting off the tree
-
-        return cur_board, depth #Not sure
+            new_board = copy.deepcopy(original_board)
+        return value
 
 # def minimax(original_board, max_player, depth = 8):
 #     if depth == 0:
@@ -402,7 +454,8 @@ if __name__ == '__main__':
         if not gameover:
             #player two
             print 'Player Two!'
-            col = int(raw_input('Enter a colum to place a tile\n'))
+            # col = int(raw_input('Enter a colum to place a tile\n'))
+            value, col = game.best_move(game.player_2_token)
             game.place_token(col, 'x')
             game.print_board()
             gameoover, score = game.goal_test('x')
