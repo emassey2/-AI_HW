@@ -282,14 +282,17 @@ class Board:
     def best_move(self, player_token):
         best_value = 0
         best_col = 0
+        new_board = copy.deepcopy(self)
         for col in xrange(self.columns):
             print "Currently at col ", col
             print "Best value ", best_value
-            self.place_token(col, player_token)
-            value = alphabeta_minimax(self, False, NEG_INF, POS_INF, 0)
+            new_board.place_token(col, player_token)
+            value = alphabeta_minimax(new_board, False, NEG_INF, POS_INF, 0)
             if value > best_value:
                 best_value = value
                 best_col = col
+            new_board = copy.deepcopy(self)
+
         return best_value, best_col
 
 
@@ -314,14 +317,16 @@ def alphabeta_minimax(original_board, max_player, alpha, beta, depth = 0):
                                            beta,
                                            depth + 1)
             if p1_score > value:
-                print "Trying P1 col ", col, " at depth ", depth
-                print "P1 score ", p1_score
-                new_board.print_board()
+                # print "Trying P1 col ", col, " at depth ", depth
+                # print "P1 score ", p1_score
+                # new_board.print_board()
+                pass
 
             value = max(value, p1_score)
 
             if value > alpha:
-                print "Alpha has been updated"
+                # print "Alpha has been updated"
+                pass
             alpha = max(alpha,value)
 
 
