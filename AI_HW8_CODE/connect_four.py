@@ -1,5 +1,6 @@
 import sys
 import copy
+import math
 
 MAX_DEPTH = 2
 NEG_INF = float("-inf")
@@ -291,6 +292,8 @@ class Board:
             valid = new_board.place_token(col, player_token)
             if valid:
                 value = alphabeta_minimax(new_board, True, NEG_INF, POS_INF, 0)
+                print 'v  ', value
+                print 'bv ', best_value
                 if value > best_value:
                     best_value = value
                     best_col = col
@@ -305,6 +308,9 @@ def alphabeta_minimax(original_board, max_player, alpha, beta, depth = 0):
         p1_won, p1_score_or = original_board.goal_test(original_board.player_1_token)
 
         if depth == MAX_DEPTH or p1_won:
+            p1_score_or = math.ceil(float(p1_score_or) / float(2**depth))
+            if p1_won:
+                print 'terminal1 ', p1_score_or
             return p1_score_or
 
         value = NEG_INF
@@ -315,14 +321,14 @@ def alphabeta_minimax(original_board, max_player, alpha, beta, depth = 0):
 
             if valid:
                 p1_score = alphabeta_minimax(new_board, False, alpha, beta, depth + 1)
-                #print p1_score
-                #new_board.print_board()
+                print 'p1 ', p1_score
+                new_board.print_board()
                 value = max(value, p1_score)
                 alpha = max(alpha, value)
 
 
-                if beta <= alpha:
-                    break #Cutting off the tree
+            if beta <= alpha:
+                break #Cutting off the tree
             new_board = copy.deepcopy(original_board)
 
         return value
@@ -331,6 +337,9 @@ def alphabeta_minimax(original_board, max_player, alpha, beta, depth = 0):
         p2_won, p2_score_or = original_board.goal_test(original_board.player_2_token)
 
         if depth == MAX_DEPTH or p2_won:
+            p2_score_or = math.ceil(float(p1_score_or) / float(2**depth))
+            if p2_score_or:
+                print 'terminal1 ', p2_score_or
             return p2_score_or
 
         value = POS_INF
@@ -341,15 +350,16 @@ def alphabeta_minimax(original_board, max_player, alpha, beta, depth = 0):
             valid = new_board.place_token(col,new_board.player_2_token)
             if valid:
                 p2_score = alphabeta_minimax(new_board, True, alpha, beta, depth + 1)
-                #print p1_score
-                #new_board.print_board()
+                print 'p2 ', p2_score
+                new_board.print_board()
                 value = min(value, p2_score)
-                beta = min(beta,value)
+                beta = min(beta, value)
 
-                if beta <= alpha:
-                    break #Cutting off the tree
+            if beta <= alpha:
+                break #Cutting off the tree
 
             new_board = copy.deepcopy(original_board)
+
         return value
 
 # def minimax(original_board, max_player, depth = 8):
@@ -381,33 +391,16 @@ def alphabeta_minimax(original_board, max_player, alpha, beta, depth = 0):
 #         return cur_board, depth #Not sure
 
 def test(game):
-    game.place_token(1,'x')
-    game.place_token(2,'x')
-    game.place_token(3,'x')
-    game.place_token(4,'x')
-    game.place_token(5,'o')
-    game.place_token(2,'o')
-    game.place_token(5,'o')
-    game.place_token(2,'o')
-    game.place_token(5,'o')
-    game.place_token(2,'o')
-    game.place_token(5,'o')
-    game.place_token(2,'x')
-    game.place_token(2,'o')
+    game.place_token(0,'x')
+    game.place_token(0,'x')
+    game.place_token(0,'x')
 
-    game.place_token(3,'o')
-    game.place_token(4,'o')
-    game.place_token(4,'o')
-    game.place_token(5,'o')
-    game.place_token(6,'o')
-    game.place_token(6,'o')
-    game.place_token(6,'o')
-    game.place_token(6,'o')
-    game.place_token(6,'o')
-    game.place_token(6,'o')
     finish = game.check_vertically('o')
+    print finish
     finish = game.check_horizontally('o')
+    print finish
     finish = game.check_diagonally('o')
+    print finish
     game.print_board()
 
 
@@ -430,26 +423,31 @@ if __name__ == '__main__':
     #Create the board
     game.create_board()
     game.print_board()
+    test(game)
 
     gameover = False
     while not gameover:
-        #player two
-        print 'Player Two!'
+        #player one
+        print 'Player One!'
         # col = int(raw_input('Enter a colum to place a tile\n'))
-        value, col = game.best_move(game.player_2_token)
+        value, col = game.best_move(game.player_1_token)
         game.place_token(col, 'o')
         game.print_board()
-        gameoover, score = game.goal_test('o')
+        gameover, score = game.goal_test('o')
         print "o's score", score, '\n'
 
         if not gameover:
-            #player one
-            print 'Player One!'
+            #player two
+            print 'Player two!'
             col = int(raw_input('Enter a colum to place a tile\n'))
             game.place_token(col, 'x')
             game.print_board()
             gameover, score = game.goal_test('x')
             print "x's score: ", score, '\n'
+
+        print '\n\n\n\n\n'
+        print '********************************************************************************'
+        print '\n\n\n\n\n'
 
 
     #test(game)
