@@ -328,7 +328,7 @@ def ab_min(original_board, token, alpha, beta, depth = 0):
     new_token = 'x' if token == 'o' else 'o'
     new_board = copy.deepcopy(original_board)
     value = POS_INF
-    token_positions = list(range(0,7))
+    token_positions = list(range(0,new_board.columns))
     random.shuffle(token_positions)
     for col in xrange(original_board.columns):
         valid = new_board.place_token(token_positions[col], new_token)
@@ -395,8 +395,8 @@ if __name__ == '__main__':
     columns = int(columns)
 
     #Create the object from class Board
-    rows = 6
-    columns = 7
+    # rows = 6
+    # columns = 7
     game = Board(rows,columns)
 
     #Create the characters for the players
