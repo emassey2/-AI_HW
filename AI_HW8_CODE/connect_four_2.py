@@ -61,9 +61,9 @@ class Board:
 
                     #Identify if there's a character already
                     char = self.board[i][j]
-                    if char == 'x':
+                    if char == self.player_2_token:
                         outcome += self.player_2_token_colorized+'|'
-                    elif char == 'o':
+                    elif char == self.player_1_token:
                         outcome += self.player_1_token_colorized+'|'
                     else:
                         outcome += char+'|'
@@ -77,10 +77,10 @@ class Board:
         valid = False
         #Place a token in the desired location
         for i in xrange(self.rows, 0, -1):
-            # print "position ", i,column, self.board[i-1][column]
             if self.board[i-1][column] == ' ':
                 self.board[i-1][column] = char
                 valid = True
+                #Once we place a token we break the loop
                 break
 
         return valid
@@ -278,108 +278,242 @@ class Board:
         return token_won, token_score
 
     def goal_test(self, token):
-
+        #Collect the test results of the desired player
         token_won_v, token_score_v = self.check_vertically(token)
         token_won_h, token_score_h = self.check_horizontally(token)
         token_won_d, token_score_d = self.check_diagonally(token)
 
+        #Perform a test for the opponent
         if token == self.player_1_token:
             op_token = self.player_2_token
         else:
             op_token = self.player_1_token
 
+        #Collect the test results of the opponent
         _, op_token_score_v = self.check_vertically(op_token)
         _, op_token_score_h = self.check_horizontally(op_token)
         _, op_token_score_d = self.check_diagonally(op_token)
+
+        #Combine both results
+
         total_score = (token_score_v - op_token_score_v) + \
                       (token_score_h - op_token_score_h) + \
                       (token_score_d - op_token_score_d)
+
+        #Set a winner flag in case that the player won with that movement
         token_won = token_won_v or token_won_h or token_won_d
 
         return token_won, total_score
 
-    def best_move(self, player_token):
+    def best_move(self, player_token,algorithm):
         best_value = NEG_INF
         best_col = 0
+        #Back up of the board
         new_board = copy.deepcopy(self)
+
         for col in xrange(self.columns):
+            #Evaluate placing a token in every column and use the best one
             valid = new_board.place_token(col, player_token)
+
+            #Only evaluate valid placements
             if valid:
-                value = ab_min(new_board, player_token, NEG_INF, POS_INF, 1)
-                # print 'v  ', value
-                # print 'bv ', best_value
+                #Evaluate the min using the selected algorithm
+                if algorithm == 'ab':
+                    value = ab_min(new_board, player_token, NEG_INF, POS_INF, 1)
+                else:
+                    value = minm(new_board, player_token, 1)
+
                 if value > best_value:
                     best_value = value
                     best_col = col
+
+            #Revert changes
             new_board = copy.deepcopy(self)
 
         return best_value, best_col
 
-def ab_min(original_board, token, alpha, beta, depth = 0):
+def minm(original_board, token, depth = 0):
+    #Goal test
     won, score = original_board.goal_test(token)
 
+    #In case we reached the max depth or player won
     if depth >= MAX_DEPTH or won:
+        #Penalize based on the depth
         score = math.ceil(float(score) / float(2**depth))
-        if token == 'o':
+
+        if token == original_board.player_1_token:
             score = -score
-        # print 'min end ', score
         return score
 
-    new_token = 'x' if token == 'o' else 'o'
+    #Change the token for the max turn
+    new_token = original_board.player_2_token \
+        if token == original_board.player_1_token else original_board.player_1_token
+
+    #Create a backup of the board
     new_board = copy.deepcopy(original_board)
+
     value = POS_INF
+
+    #Create a list of possible positions for the token
     token_positions = list(range(0,new_board.columns))
+
+    #Random shuffle to get a better evaluation
     random.shuffle(token_positions)
+
     for col in xrange(original_board.columns):
+        #Place the token in the desired location
         valid = new_board.place_token(token_positions[col], new_token)
-        # valid = new_board.place_token(col, new_token)
 
+        #If it was a valid placement
         if valid:
-            max_val = ab_max(new_board, new_token, alpha, beta, depth + 1)
-            value = min(value, max_val)
-            # print token, 'score', score
-            # new_board.print_board()
+            #Get the max value of the upcoming movements
+            max_val = maxm(new_board, new_token, depth + 1)
 
+            #Get the min between the current value and the max_val
+            value = min(value, max_val)
+
+        #Restore the board
         new_board = copy.deepcopy(original_board)
 
+    return value
+
+def ab_min(original_board, token, alpha, beta, depth = 0):
+    #Goal test
+    won, score = original_board.goal_test(token)
+
+    #In case we reached the max depth or player won
+    if depth >= MAX_DEPTH or won:
+        #Penalize based on the depth
+        score = math.ceil(float(score) / float(2**depth))
+        if token == original_board.player_1_token:
+            score = -score
+        return score
+
+    #Change the token for the max turn
+    new_token = original_board.player_2_token \
+        if token == original_board.player_1_token else original_board.player_1_token
+
+    #Create a backup of the board
+    new_board = copy.deepcopy(original_board)
+
+    value = POS_INF
+
+    #Create a list of possible positions for the token
+    token_positions = list(range(0,new_board.columns))
+
+    #Random shuffle to get a better evaluation
+    random.shuffle(token_positions)
+
+    for col in xrange(original_board.columns):
+        #Place the token in the desired location
+        valid = new_board.place_token(token_positions[col], new_token)
+
+        if valid:
+            #Get the max value of the upcoming movements
+            max_val = ab_max(new_board, new_token, alpha, beta, depth + 1)
+
+            #Get the min between the current value and the max_val
+            value = min(value, max_val)
+
+        #Restore the board
+        new_board = copy.deepcopy(original_board)
+
+        #Evaluate prunning condition
         if value <= alpha:
-            break #Cutting off the tree
+            #Chomp the tree
+            break
+
         beta = min(beta, value)
 
     return value
-    # return beta
 
-
-def ab_max(original_board, token, alpha, beta, depth = 0):
+def maxm(original_board, token, depth = 0):
+    #Goal test
     won, score = original_board.goal_test(token)
 
+    #In case we reached the max depth or player won
     if depth >= MAX_DEPTH or won:
+        #Penalize based on the depth
         score = math.ceil(float(score) / float(2**depth))
-        if token == 'x':
+        if token == original_board.player_2_token:
             score = -score
-        # print 'max end ', score
         return score
 
-    new_token = 'x' if token == 'o' else 'o'
+    #Change the token for the min turn
+    new_token = original_board.player_2_token \
+        if token == original_board.player_1_token else original_board.player_1_token
+
+    #Create a backup of the board
     new_board = copy.deepcopy(original_board)
+
     value = NEG_INF
+
+    #Create a list of possible positions for the token
     token_positions = list(range(0,new_board.columns))
+
+    #Random shuffle to get a better evaluation
     random.shuffle(token_positions)
+
     for col in xrange(original_board.columns):
+        #Place the token in the desired location
         valid = new_board.place_token(token_positions[col], new_token)
-        # valid = new_board.place_token(col, new_token)
 
         if valid:
-            min_val = ab_min(new_board, new_token, alpha, beta, depth + 1)
+            #Get the min value of the upcoming movements
+            min_val = minm(new_board, new_token, depth + 1)
+
+            #Get the max between the current value and the min_val
             value = max(value, min_val)
 
-            # print token, 'score', score
-            # new_board.print_board()
-
+        #Restore the board
         new_board = copy.deepcopy(original_board)
 
+    return value
+
+def ab_max(original_board, token, alpha, beta, depth = 0):
+    #Goal test
+    won, score = original_board.goal_test(token)
+
+    #In case we reached the max depth or player won
+    if depth >= MAX_DEPTH or won:
+        score = math.ceil(float(score) / float(2**depth))
+        if token == original_board.player_2_token:
+            score = -score
+        return score
+
+    #Change the token for the min turn
+    new_token = original_board.player_2_token \
+        if token == original_board.player_1_token else original_board.player_1_token
+
+    #Create a backup of the board
+    new_board = copy.deepcopy(original_board)
+
+    value = NEG_INF
+
+    #Create a list of possible positions for the token
+    token_positions = list(range(0,new_board.columns))
+
+    #Random shuffle to get a better evaluation
+    random.shuffle(token_positions)
+    for col in xrange(original_board.columns):
+        #Place the token in the desired location
+        valid = new_board.place_token(token_positions[col], new_token)
+
+        if valid:
+            #Get the min value of the upcoming movements
+            min_val = ab_min(new_board, new_token, alpha, beta, depth + 1)
+
+            #Get the max between the current value and the min_val
+            value = max(value, min_val)
+
+        #Restore the board
+        new_board = copy.deepcopy(original_board)
+
+        #Evaluate prunning condition
         if value >= beta:
-            break #Cutting off the tree
+            #Chomp the tree
+            break
+
         alpha = max(alpha, value)
 
     return value
@@ -414,6 +548,8 @@ if __name__ == '__main__':
 
     if game.players[1] == 'm' or game.players[0] == 'm' :
         MAX_DEPTH = int(raw_input("Select difficulty level (2 - 8): "))
+        algorithm = \
+            raw_input("Select ab for alpha-beta algorithm or mi for just minimax ")
 
 
 
@@ -428,7 +564,7 @@ if __name__ == '__main__':
                 col = int(raw_input('Enter a colum to place a tile\n'))
         else:
             print 'Player One as a Machine'
-            value, col = game.best_move(game.player_1_token)
+            value, col = game.best_move(game.player_1_token,algorithm)
         game.place_token(col, game.player_1_token)
         game.print_board()
         gameover, score = game.goal_test(game.player_1_token)
@@ -444,12 +580,11 @@ if __name__ == '__main__':
                     col = int(raw_input('Enter a colum to place a tile\n'))
             else:
                 print 'Player two as a Machine'
-                value, col = game.best_move(game.player_2_token)
+                value, col = game.best_move(game.player_2_token,algorithm)
             game.place_token(col, game.player_2_token)
             game.print_board()
             gameover, score = game.goal_test(game.player_2_token)
             print "x's score: ", score, '\n'
-
         print '\n\n\n\n\n'
         print '********************************************************************************'
         print '\n\n\n\n\n'
