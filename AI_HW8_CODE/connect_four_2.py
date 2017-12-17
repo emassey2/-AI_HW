@@ -412,6 +412,9 @@ if __name__ == '__main__':
     game.players[1] = \
         raw_input("Select the type for player 2 (h = Human, m = machine ): ")
 
+    if game.players[1] == 'm' or game.players[0] == 'm' :
+        MAX_DEPTH = int(raw_input("Select difficulty level (2 - 8): "))
+
 
 
     gameover = False
